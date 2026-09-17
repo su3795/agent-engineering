@@ -1,0 +1,48 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+*.egg-info/
+dist/
+build/
+
+# Node
+node_modules/
+.npm/
+yarn-error.log
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# 环境/密钥
+.env
+.env.local
+*.key
+*.pem
+
+# 构建产物
+frontend/dist/
+backend/static/
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# 测试/临时
+.pytest_cache/
+.coverage
+htmlcov/
+*.sqlite
+chroma_db/
+
+# 架构图：保留可再生的 PNG 与预览页（由 render_arch_png.py 生成）
+docs/_assets/*.png
+docs/_assets/index.html
+# 保留 .mmd 源文件（可编辑、可版本追踪）
+!docs/_assets/*.mmd
