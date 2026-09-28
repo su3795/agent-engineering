@@ -3,35 +3,36 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Agent Engineering V2 · 在线演示</title>
+<title>Production-Grade Agent Engineering · 生产级智能体工程化演示</title>
 <style>
-:root{--bg:#0d1117;--panel:#161b22;--card:#1c2333;--card2:#21262d;--border:#30363d;--text:#e6edf3;--sub:#8b949e;--green:#3fb950;--blue:#58a6ff;--purple:#a78bfa;--orange:#f0883e;--red:#f85149;--yellow:#d29922}
+:root{--bg:#0d1117;--panel:#161b22;--card:#1c2333;--card2:#21262d;--border:#30363d;--text:#e6edf3;--sub:#8b949e;--green:#3fb950;--blue:#58a6ff;--purple:#a78bfa;--orange:#f0883e;--red:#f85149;--yellow:#d29922;--teal:#39d2c0}
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:-apple-system,'PingFang SC','Microsoft YaHei',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
 .layout{display:grid;grid-template-columns:290px 1fr;min-height:100vh}
 @media(max-width:900px){.layout{grid-template-columns:1fr}}
 .sidebar{background:var(--panel);border-right:1px solid var(--border);padding:18px;display:flex;flex-direction:column;gap:9px;overflow:auto}
-.sidebar h1{font-size:15px;margin-bottom:2px;background:linear-gradient(135deg,#60a5fa,#a78bfa);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.sidebar h1{font-size:14px;margin-bottom:2px;background:linear-gradient(135deg,#39d2c0,#58a6ff,#a78bfa);-webkit-background-clip:text;-webkit-text-fill-color:transparent;line-height:1.4}
 .sidebar .desc{font-size:11px;color:var(--sub);margin-bottom:10px;line-height:1.6}
+.badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:10px;background:rgba(57,210,192,.15);color:var(--teal);margin:6px 0 4px;font-weight:600}
 .preset{border:1px solid var(--border);background:var(--card);border-radius:10px;padding:9px 11px;cursor:pointer;font-size:12px;transition:.15s;color:var(--text)}
-.preset:hover{border-color:var(--blue);transform:translateX(3px)}
-.preset b{display:block;color:var(--blue);margin-bottom:3px}
-.badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:10px;background:rgba(88,166,255,.15);color:var(--blue);margin:6px 0 4px}
-.session{border:1px solid var(--border);border-radius:10px;padding:8px 10px;font-size:12px;cursor:pointer;display:flex;justify-content:space-between;align-items:center}
+.preset:hover{border-color:var(--teal);transform:translateX(3px)}
+.preset b{display:block;color:var(--teal);margin-bottom:3px}
+.preset small{color:var(--sub);font-size:10px}
+.session{border:1px solid var(--border);border-radius:10px;padding:8px 10px;font-size:12px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:6px}
 .session.active{background:var(--card);border-color:var(--green)}
-.session .dot{width:8px;height:8px;border-radius:50%;background:var(--green)}
+.session .dot{width:8px;height:8px;border-radius:50%;background:var(--green);flex-shrink:0}
 .session .dot.idle{background:var(--sub)}
-.session .rename{background:transparent;border:none;color:var(--sub);cursor:pointer;font-size:11px;display:none}
+.session .rename{background:transparent;border:none;color:var(--sub);cursor:pointer;font-size:11px;display:none;flex-shrink:0}
 .session:hover .rename{display:inline}
 #newSessionBtn:hover{background:rgba(63,185,80,.35)}
 #sessionList{display:flex;flex-direction:column;gap:6px}
 .engine-toggle{display:flex;gap:6px;margin-top:auto}
 .engine-toggle button{flex:1;padding:8px;font-size:11px;border-radius:8px;border:1px solid var(--border);background:var(--card);color:var(--sub);cursor:pointer}
-.engine-toggle button.active{border-color:var(--blue);color:var(--blue);font-weight:700}
+.engine-toggle button.active{border-color:var(--teal);color:var(--teal);font-weight:700}
 .main{padding:20px 28px;overflow:auto}
 .input-bar{display:flex;gap:10px;margin-bottom:18px}
 .input-bar input{flex:1;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:13px 15px;color:var(--text);font-size:14px;outline:none}
-.input-bar input:focus{border-color:var(--blue)}
+.input-bar input:focus{border-color:var(--teal)}
 .input-bar button{background:linear-gradient(135deg,#238636,#2ea043);color:#fff;border:none;border-radius:12px;padding:0 22px;font-weight:700;cursor:pointer}
 .input-bar button:disabled{opacity:.5;cursor:not-allowed}
 .pipeline{display:grid;grid-template-columns:repeat(6,1fr);gap:7px;margin-bottom:18px}
@@ -44,11 +45,13 @@ body{font-family:-apple-system,'PingFang SC','Microsoft YaHei',sans-serif;backgr
 .stage .cap span{width:6px;height:6px;border-radius:50%;background:var(--border)}
 .stage.running{border-color:var(--blue);box-shadow:0 0 16px rgba(88,166,255,.4)}
 .stage.done{border-color:var(--green)}
+.stage.paused{border-color:var(--yellow)}
+.stage.failed{border-color:var(--red)}
 .stage.running .icon{animation:pulse 1s infinite}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
 .tabs{display:flex;gap:6px;border-bottom:1px solid var(--border);margin-bottom:14px;flex-wrap:wrap}
 .tab{padding:8px 14px;font-size:12px;cursor:pointer;color:var(--sub);border-bottom:2px solid transparent;margin-bottom:-1px}
-.tab.active{color:var(--text);border-bottom-color:var(--blue)}
+.tab.active{color:var(--text);border-bottom-color:var(--teal)}
 .panel{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:14px}
 .panel h3{font-size:12px;color:var(--sub);margin-bottom:10px;text-transform:uppercase;letter-spacing:1px}
 .tab-panel{display:none}
@@ -56,8 +59,7 @@ body{font-family:-apple-system,'PingFang SC','Microsoft YaHei',sans-serif;backgr
 .agent-msg{display:flex;gap:8px;margin-bottom:10px;font-size:12px;align-items:flex-start}
 .agent-msg .avatar{width:26px;height:26px;border-radius:7px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:13px}
 .agent-msg .body{flex:1;background:var(--card);border-radius:8px;padding:8px 10px;line-height:1.55}
-.agent-msg .body .tag{font-size:9px;color:var(--green);margin-top:3px}
-/* AI 思考块 */
+.agent-msg .body .tag{font-size:9px;color:var(--green);margin-top:3px;display:inline-block;margin-right:6px}
 .thinking{margin:6px 0 10px;font-size:11px;border:1px solid rgba(167,139,250,.35);border-radius:9px;background:rgba(167,139,250,.07);overflow:hidden}
 .thinking .th-head{display:flex;align-items:center;gap:6px;padding:6px 10px;cursor:pointer;color:var(--purple);user-select:none;font-weight:600}
 .thinking .th-head .th-chev{transition:.2s;font-size:9px}
@@ -68,9 +70,10 @@ body{font-family:-apple-system,'PingFang SC','Microsoft YaHei',sans-serif;backgr
 .thinking .th-body .step .n{flex-shrink:0;width:16px;height:16px;border-radius:50%;background:rgba(167,139,250,.25);color:var(--purple);font-size:9px;display:flex;align-items:center;justify-content:center;font-weight:700}
 .thinking .th-body .step.ok .n{background:rgba(63,185,80,.25);color:var(--green)}
 .thinking .th-body .step.warn .n{background:rgba(248,81,73,.25);color:var(--red)}
+.thinking .th-body .step.info .n{background:rgba(88,166,255,.25);color:var(--blue)}
 canvas{width:100%;display:block;background:var(--card)}
 .canvas-wrap{border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-top:8px}
-.log{font-family:'SF Mono',Consolas,monospace;font-size:10px;color:var(--sub);max-height:240px;overflow:auto;line-height:1.7}
+.log{font-family:'SF Mono',Consolas,monospace;font-size:10px;color:var(--sub);max-height:280px;overflow:auto;line-height:1.7}
 .log .ok{color:var(--green)}
 .log .info{color:var(--blue)}
 .log .warn{color:var(--yellow)}
@@ -80,23 +83,24 @@ canvas{width:100%;display:block;background:var(--card)}
 .guard-row .g-icon{font-size:15px}
 .guard-row .g-name{flex:1;font-weight:600}
 .guard-row .g-desc{color:var(--sub);font-size:10px}
-.guard-row .g-tag{padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700}
+.guard-row .g-tag{padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;flex-shrink:0}
 .g-tag.pass{background:rgba(63,185,80,.15);color:var(--green)}
 .g-tag.fail{background:rgba(248,81,73,.15);color:var(--red)}
 .g-tag.warn{background:rgba(210,153,34,.15);color:var(--yellow)}
+.g-tag.gate{background:rgba(88,166,255,.15);color:var(--blue)}
 .two{display:grid;grid-template-columns:1fr 1fr;gap:14px}
 @media(max-width:900px){.two{grid-template-columns:1fr}}
 .limit{display:flex;flex-direction:column;gap:10px}
 .limit-item{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:11px 12px;font-size:11px;line-height:1.6}
-.limit-item b{color:var(--orange);display:block;margin-bottom:4px;font-size:12px}
+.limit-item b{color:var(--teal);display:block;margin-bottom:4px;font-size:12px}
 .limit-item .fix{color:var(--green);font-size:10px;margin-top:5px;font-style:italic}
 .wf{display:flex;align-items:center;gap:4px;flex-wrap:wrap;margin-top:8px}
 .wf .wf-bar{height:14px;border-radius:3px;background:var(--blue);position:relative;min-width:20px}
-.wf .wf-bar.sp{LangChain:;background:linear-gradient(90deg,var(--blue),var(--purple))}
-.wf .wf-label{font-size:9px;color:var(--sub);width:70px}
-.wf .wf-time{font-size:9px;color:var(--text);width:42px;text-align:right}
+.wf .wf-label{font-size:9px;color:var(--sub);width:78px;flex-shrink:0}
+.wf .wf-time{font-size:9px;color:var(--text);width:46px;text-align:right;flex-shrink:0}
+.wf .wf-tag{font-size:8px;padding:1px 4px;border-radius:4px;margin-left:4px}
 
-/* ===== LLM 模型选择器 ===== */
+/* LLM 模型选择器 */
 .model-panel{border:1px solid var(--border);background:var(--card);border-radius:10px;padding:10px;display:flex;flex-direction:column;gap:8px;margin-top:6px}
 .model-mode{display:flex;gap:6px}
 .model-mode button{flex:1;padding:7px 4px;font-size:10.5px;border-radius:8px;border:1px solid var(--border);background:var(--card2);color:var(--sub);cursor:pointer;transition:.15s}
@@ -105,7 +109,7 @@ canvas{width:100%;display:block;background:var(--card)}
 .cfg-hint{font-size:8.5px;color:var(--sub);opacity:.8}
 .cfg-select,.cfg-input{width:100%;background:var(--card2);border:1px solid var(--border);border-radius:7px;padding:6px 8px;color:var(--text);font-size:10.5px;outline:none;font-family:inherit}
 .cfg-select:focus,.cfg-input:focus{border-color:var(--blue)}
-.cfg-tip{font-size:9px;color:var(--sub);line-height:1.5;background:rgba(88,166,255,.08);border:1px solid rgba(88,166,255,.2);border-radius:6px;padding:6px 8px}
+.cfg-tip{font-size:9px;color:var(--sub);line-height:1.5;background:rgba(57,210,192,.08);border:1px solid rgba(57,210,192,.2);border-radius:6px;padding:6px 8px}
 .model-status{display:flex;align-items:center;gap:6px;font-size:10px;color:var(--sub)}
 .ms-dot{width:8px;height:8px;border-radius:50%;background:var(--sub)}
 .ms-dot.mock{background:var(--yellow)}
@@ -113,23 +117,66 @@ canvas{width:100%;display:block;background:var(--card)}
 .ms-dot.busy{background:var(--blue);animation:pulse 1s infinite}
 .ms-dot.err{background:var(--red)}
 .test-btn{width:100%;padding:7px;border-radius:8px;border:1px dashed var(--border);background:transparent;color:var(--sub);font-size:10.5px;cursor:pointer;transition:.15s}
-.test-btn:hover{border-color:var(--blue);color:var(--blue)}
+.test-btn:hover{border-color:var(--teal);color:var(--teal)}
 .test-btn:disabled{opacity:.5;cursor:not-allowed}
-/* Agent 消息里标注 LLM 来源 */
 .agent-msg .body .tag.llm-mock{color:var(--yellow)}
 .agent-msg .body .tag.llm-real{color:var(--green)}
+
+/* 新增：生产级模块样式 */
+.kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:18px}
+@media(max-width:900px){.kpi-row{grid-template-columns:repeat(2,1fr)}}
+.kpi{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:10px 12px}
+.kpi .k-label{font-size:10px;color:var(--sub)}
+.kpi .k-value{font-size:20px;font-weight:700;margin-top:2px;font-variant-numeric:tabular-nums}
+.kpi .k-unit{font-size:10px;color:var(--sub);font-weight:400}
+.kpi .k-trend{font-size:9px;margin-top:2px}
+.kpi .k-trend.up{color:var(--green)}
+.kpi .k-trend.down{color:var(--red)}
+.gate-banner{background:rgba(248,81,73,.08);border:1px solid rgba(248,81,73,.4);border-radius:10px;padding:12px;margin-bottom:14px;display:none}
+.gate-banner.show{display:flex;align-items:center;gap:10px;justify-content:space-between}
+.gate-banner .g-text{font-size:12px}
+.gate-banner button{padding:8px 16px;border-radius:8px;border:none;background:var(--green);color:#fff;font-weight:700;cursor:pointer;font-size:12px}
+.gate-banner button.reject{background:var(--red)}
+.gate-banner button:disabled{opacity:.5;cursor:not-allowed}
+.eval-table{width:100%;border-collapse:collapse;font-size:10.5px;margin-top:8px}
+.eval-table th,.eval-table td{border:1px solid var(--border);padding:6px 8px;text-align:left}
+.eval-table th{background:var(--card);color:var(--sub);font-weight:600}
+.eval-table td.pass{color:var(--green)}
+.eval-table td.fail{color:var(--red)}
+.eval-table td.warn{color:var(--yellow)}
+.sec-desc{font-size:11px;color:var(--sub);margin-bottom:10px;line-height:1.6}
+.slo-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:10px}
+@media(max-width:900px){.slo-grid{grid-template-columns:1fr}}
+.slo-card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:10px}
+.slo-card .s-name{font-size:11px;font-weight:700}
+.slo-card .s-val{font-size:16px;font-weight:700;margin-top:4px;font-variant-numeric:tabular-nums}
+.slo-card .s-target{font-size:9px;color:var(--sub)}
+.slo-card.ok{border-color:var(--green)}
+.slo-card.bad{border-color:var(--red)}
+.audit-row{display:flex;gap:8px;align-items:center;font-size:10.5px;padding:7px 10px;background:var(--card);border:1px solid var(--border);border-radius:8px;margin-bottom:6px}
+.audit-row .a-ts{color:var(--sub);font-family:monospace;font-size:9.5px;width:66px;flex-shrink:0}
+.audit-row .a-actor{width:88px;flex-shrink:0;font-weight:600}
+.audit-row .a-act{flex:1}
+.audit-row .a-dec{flex-shrink:0;padding:2px 7px;border-radius:10px;font-size:9px;font-weight:700}
+.a-dec.allow{background:rgba(63,185,80,.15);color:var(--green)}
+.a-dec.deny{background:rgba(248,81,73,.15);color:var(--red)}
+.a-dec.gate{background:rgba(88,166,255,.15);color:var(--blue)}
+.phase-bar{display:flex;gap:4px;margin:8px 0 10px;font-size:9px;flex-wrap:wrap}
+.phase-chip{padding:3px 8px;border-radius:10px;background:var(--card);border:1px solid var(--border);color:var(--sub)}
+.phase-chip.on{border-color:var(--teal);color:var(--teal)}
+.phase-chip.done{border-color:var(--green);color:var(--green)}
 </style>
 </head>
 <body>
 <div class="layout">
   <aside class="sidebar">
-    <h1>🛡️ WorkBuddy 流水线</h1>
-    <div class="desc">6 大工程化能力 × 6 阶段多 Agent 流水线<br>新增：AI 思考可视化 · 链路监控 · 可靠性护栏</div>
+    <h1>⚙️ Production-Grade Agent Engineering</h1>
+    <div class="desc">8 项生产级工程能力 × 6 阶段可观测流水线<br>真实 LLM 优先 · 可回放 Trace · SLO 告警 · 灰度发布</div>
     <div class="badge">预设需求（点击直接演示）</div>
-    <div class="preset" data-req="做一个天气查询 App，输入城市名返回实时天气和未来 3 天预报，支持国内主要城市"><b>🌤️ 天气 App</b>Web + API + 缓存 + 部署</div>
-    <div class="preset" data-req="搭建一个待办事项 Todo 应用，支持增删改查、分类、截止日期提醒，数据本地持久化"><b>✅ Todo 应用</b>前端状态 + 本地存储</div>
-    <div class="preset" data-req="开发一个个人记账本，记录收支、按月份统计图表、导出 CSV，支持多账户"><b>💰 记账本</b>数据可视化 + 导出</div>
-    <div class="preset" data-req="做一个 Markdown 笔记应用，支持实时预览、标签分类、全文搜索、暗色主题"><b>📝 笔记应用</b>编辑器 + 搜索 + 主题</div>
+    <div class="preset" data-req="做一个天气查询 App，输入城市名返回实时天气和未来 3 天预报，支持国内主要城市"><b>🌤️ 天气查询 App</b><small>Web + 缓存 + 外部 API</small></div>
+    <div class="preset" data-req="搭建一个待办事项 Todo 应用，支持增删改查、分类、截止日期提醒，数据本地持久化"><b>✅ Todo 应用</b><small>前端状态 + 本地存储</small></div>
+    <div class="preset" data-req="开发一个个人记账本，记录收支、按月份统计图表、导出 CSV，支持多账户"><b>💰 个人记账本</b><small>数据可视化 + 导出</small></div>
+    <div class="preset" data-req="做一个 Markdown 笔记应用，支持实时预览、标签分类、全文搜索、暗色主题"><b>📝 Markdown 笔记</b><small>编辑器 + 搜索 + 主题</small></div>
     <div class="badge" style="display:flex;justify-content:space-between;align-items:center">
       会话
       <button id="newSessionBtn" title="新建会话" style="background:rgba(63,185,80,.15);border:1px solid var(--green);color:var(--green);border-radius:6px;width:20px;height:20px;cursor:pointer;font-size:12px;line-height:1">+</button>
@@ -140,18 +187,16 @@ canvas{width:100%;display:block;background:var(--card)}
       <button data-eng="agentscope">AgentScope</button>
     </div>
 
-    <!-- ===== ② LLM 模型选择器（Mock / 真实可切换）===== -->
-    <div class="badge" style="margin-top:14px">🤖 LLM 模型（Mock / 真实可切换）</div>
+    <div class="badge" style="margin-top:14px">🤖 LLM 接入（默认真实模式）</div>
     <div class="model-panel">
       <div class="model-mode">
-        <button class="active" data-mode="mock" title="预设脚本，无需网络，离线即用">🎭 Mock（离线）</button>
-        <button data-mode="real" title="走真实 HTTP：本地 Ollama / Mock 服务器 / 云端代理">🌐 真实 LLM</button>
+        <button data-mode="real" title="真实 HTTP：同源代理 / 本地 Ollama / Mock 服务器">🌐 真实 LLM</button>
+        <button class="active" data-mode="mock" title="预设脚本，无需网络，离线兜底">🎭 Mock 兜底</button>
       </div>
-
-      <!-- 真实模式：供应商 + 端点配置 -->
-      <div class="real-cfg" id="realCfg" style="display:none">
+      <div class="real-cfg" id="realCfg">
         <label class="cfg-label">供应商</label>
         <select id="providerSel" class="cfg-select">
+          <option value="via-proxy">🔒 同源代理（生产推荐）</option>
           <option value="ollama">🦙 Ollama（本地 · 免费）</option>
           <option value="mock-server">🧪 本地 Mock 服务器（:8765）</option>
           <option value="groq">⚡ Groq（Llama · 免费额度）</option>
@@ -159,23 +204,17 @@ canvas{width:100%;display:block;background:var(--card)}
           <option value="openrouter">🔀 OpenRouter（多模型 · 免费档）</option>
           <option value="openai">🔵 OpenAI</option>
           <option value="custom">⚙️ 自定义（OpenAI 兼容）</option>
-          <option value="via-proxy">🔒 经同源代理（推荐生产）</option>
         </select>
-
         <label class="cfg-label">模型名 <span class="cfg-hint" id="modelHint">本地需先 ollama pull</span></label>
-        <input id="modelInput" class="cfg-input" value="qwen2.5:7b" placeholder="如 gpt-4o-mini / llama-3.3-70b-versatile" />
-
+        <input id="modelInput" class="cfg-input" value="qwen2.5:7b" placeholder="如 gpt-4o-mini / llama-3.3-70b" />
         <label class="cfg-label">API Base <span class="cfg-hint">留空用供应商默认</span></label>
         <input id="baseInput" class="cfg-input" placeholder="https://api.groq.com/openai/v1" />
-
-        <label class="cfg-label">API Key <span class="cfg-hint">本地 Ollama 可留空</span></label>
-        <input id="keyInput" class="cfg-input" type="password" placeholder="sk-...（云端服务必填，仅存本地内存）" />
-
-        <div class="cfg-tip" id="providerTip">选择后自动填入推荐模型与端点，可在上方修改。</div>
+        <label class="cfg-label">API Key <span class="cfg-hint">仅存内存，代理模式留空</span></label>
+        <input id="keyInput" class="cfg-input" type="password" placeholder="sk-...（代理模式由后端注入）" />
+        <div class="cfg-tip" id="providerTip">生产环境首选「同源代理」：浏览器不接触 Key，由后端解 CORS 并注入凭证。</div>
       </div>
-
       <div class="model-status" id="modelStatus">
-        <span class="ms-dot idle"></span><span class="ms-text">当前：Mock 离线模式</span>
+        <span class="ms-dot idle"></span><span class="ms-text">检测中…</span>
       </div>
       <button id="testBtn" class="test-btn">🔌 测试连接</button>
     </div>
@@ -187,28 +226,48 @@ canvas{width:100%;display:block;background:var(--card)}
       <button id="runBtn">▶ 运行流水线</button>
     </div>
 
+    <!-- 关键变更：KPI 看板 -->
+    <div class="kpi-row">
+      <div class="kpi"><div class="k-label">本次成功率</div><div class="k-value" id="kpiSuccess">—</div><div class="k-trend" id="kpiSuccessTrend">-</div></div>
+      <div class="kpi"><div class="k-label">P95 端到端延迟</div><div class="k-value" id="kpiP95">—</div><div class="k-trend" id="kpiP95Trend">-</div></div>
+      <div class="kpi"><div class="k-label">单任务 LLM 成本</div><div class="k-value" id="kpiCost">—</div><div class="k-trend" id="kpiCostTrend">-</div></div>
+      <div class="kpi"><div class="k-label">Token 用量</div><div class="k-value" id="kpiTokens">—</div><div class="k-trend" id="kpiTokensTrend">-</div></div>
+    </div>
+
     <div class="pipeline" id="pipeline">
       <div class="stage" data-i="0"><div class="icon">📋</div><div class="name">需求理解</div><div class="sub">Requirement</div><div class="cap"><span></span><span></span><span></span><span></span><span></span><span></span></div></div>
       <div class="stage" data-i="1"><div class="icon">📐</div><div class="name">方案规划</div><div class="sub">Architect</div><div class="cap"><span></span><span></span><span></span><span></span><span></span><span></span></div></div>
       <div class="stage" data-i="2"><div class="icon">💻</div><div class="name">代码编写</div><div class="sub">3× Coder</div><div class="cap"><span></span><span></span><span></span><span></span><span></span><span></span></div></div>
-      <div class="stage" data-i="3"><div class="icon">🧪</div><div class="name">自动测试</div><div class="sub">Test</div><div class="cap"><span></span><span></span><span></span><span></span><span></span><span></span></div></div>
-      <div class="stage" data-i="4"><div class="icon">🔍</div><div class="name">审查评审</div><div class="sub">4× Review</div><div class="cap"><span></span><span></span><span></span><span></span><span></span><span></span></div></div>
-      <div class="stage" data-i="5"><div class="icon">🚀</div><div class="name">部署发布</div><div class="sub">DevOps</div><div class="cap"><span></span><span></span><span></span><span></span><span></span><span></span></div></div>
+      <div class="stage" data-i="3"><div class="icon">🧪</div><div class="name">独立验证</div><div class="sub">Test Suite</div><div class="cap"><span></span><span></span><span></span><span></span><span></span><span></span></div></div>
+      <div class="stage" data-i="4"><div class="icon">🔍</div><div class="name">审查与门禁</div><div class="sub">4× Review</div><div class="cap"><span></span><span></span><span></span><span></span><span></span><span></span></div></div>
+      <div class="stage" data-i="5"><div class="icon">🚀</div><div class="name">灰度发布</div><div class="sub">Canary</div><div class="cap"><span></span><span></span><span></span><span></span><span></span><span></span></div></div>
+    </div>
+
+    <!-- 关键变更：人工审批门禁横幅 -->
+    <div class="gate-banner" id="gateBanner">
+      <div class="g-text">🔒 <b>人工审批门禁</b>：检测到生产发布动作，需人工确认后方可放行。此步骤不可由 Agent 自行跳过。</div>
+      <div style="display:flex;gap:8px">
+        <button id="gateApprove">✅ 批准发布</button>
+        <button id="gateReject" class="reject">❌ 拒绝并回滚</button>
+      </div>
     </div>
 
     <div class="tabs">
       <div class="tab active" data-tab="agents">🤖 Agent 协作</div>
-      <div class="tab" data-tab="think">🧠 AI 思考过程</div>
-      <div class="tab" data-tab="arch">🏛️ 架构设计</div>
-      <div class="tab" data-tab="trace">📡 链路监控</div>
+      <div class="tab" data-tab="think">🧠 推理与决策链</div>
+      <div class="tab" data-tab="eval">🧪 评测与验收</div>
+      <div class="tab" data-tab="arch">🏛️ 生产架构</div>
+      <div class="tab" data-tab="trace">📡 链路追踪与 SLO</div>
       <div class="tab" data-tab="guard">🛡️ 可靠性护栏</div>
-      <div class="tab" data-tab="limit">⚠️ 不足与改进</div>
+      <div class="tab" data-tab="audit">📜 审计与回放</div>
+      <div class="tab" data-tab="limit">⚠️ 剩余风险与待办</div>
     </div>
 
     <!-- Agent 协作 -->
     <div class="tab-panel active" id="panel-agents">
       <div class="panel">
         <h3>🤖 Agent 协作过程</h3>
+        <div class="phase-bar" id="phaseBar"></div>
         <div id="agents"></div>
       </div>
     </div>
@@ -216,17 +275,37 @@ canvas{width:100%;display:block;background:var(--card)}
     <!-- AI 思考 -->
     <div class="tab-panel" id="panel-think">
       <div class="panel">
-        <h3>🧠 AI 思考过程（ReAct：推理 → 行动 → 观察）</h3>
-        <div class="desc" style="font-size:11px;color:var(--sub);margin-bottom:10px">每个 Agent 在产出答案前，都会展示「内部推理链」。这是防止 AI 乱说/漏答的第一道防线。</div>
+        <h3>🧠 推理与决策链（ReAct · Plan-and-Execute · Reflection）</h3>
+        <div class="sec-desc">每个 Agent 在产出结论前必须展示推理链，含证据来源与置信度。这是防幻觉与漏答的第一道防线。</div>
         <div id="thinking"></div>
+      </div>
+    </div>
+
+    <!-- 评测与验收（新增核心） -->
+    <div class="tab-panel" id="panel-eval">
+      <div class="panel">
+        <h3>🧪 评测与验收（Evaluation Gate）</h3>
+        <div class="sec-desc">没有评测体系的 Agent 无法证明「改了没有变差」。每次运行都要过三道关：独立测试套件 → 黄金集回归 → LLM-as-a-Judge 评审。</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+          <div>
+            <h3>独立测试套件（每次运行必跑）</h3>
+            <table class="eval-table" id="evalTable"></table>
+          </div>
+          <div>
+            <h3>黄金集回归（Gold Set · 30 例）</h3>
+            <div class="log" id="goldenSet"></div>
+            <h3 style="margin-top:12px">LLM-as-a-Judge 评分</h3>
+            <div class="log" id="judgeScore"></div>
+          </div>
+        </div>
       </div>
     </div>
 
     <!-- 架构设计 -->
     <div class="tab-panel" id="panel-arch">
       <div class="panel">
-        <h3>🏛️ 项目架构设计（Canvas 分层图）</h3>
-        <div class="canvas-wrap"><canvas id="arch" width="800" height="360"></canvas></div>
+        <h3>🏛️ 生产级架构（含沙箱 / 隔离 / 审计 / 灰度）</h3>
+        <div class="canvas-wrap"><canvas id="arch" width="800" height="380"></canvas></div>
         <div class="two" style="margin-top:12px">
           <div>
             <h3>核心数据流</h3>
@@ -240,13 +319,16 @@ canvas{width:100%;display:block;background:var(--card)}
       </div>
     </div>
 
-    <!-- 链路监控 -->
+    <!-- 链路追踪 -->
     <div class="tab-panel" id="panel-trace">
       <div class="panel">
-        <h3>📡 链路监控（Trace · Span · Waterfall）</h3>
+        <h3>📡 链路追踪（Trace · Span · SLO · Alert）</h3>
+        <div class="sec-desc">每条 Trace 天然归属一个租户，跨租户查询返回空。Span 持久化到本地 OTel 存储，可导出 JSONL 送 Jaeger / Tempo。</div>
         <div class="canvas-wrap"><canvas id="flow" width="800" height="240"></canvas></div>
-        <h3 style="margin-top:12px">Waterfall 耗时分布</h3>
+        <h3 style="margin-top:12px">Waterfall 耗时分布（含重试与降级）</h3>
         <div id="waterfall"></div>
+        <h3 style="margin-top:12px">SLO 看板</h3>
+        <div class="slo-grid" id="sloGrid"></div>
         <h3 style="margin-top:12px">事件日志</h3>
         <div class="log" id="log"></div>
       </div>
@@ -255,15 +337,25 @@ canvas{width:100%;display:block;background:var(--card)}
     <!-- 可靠性护栏 -->
     <div class="tab-panel" id="panel-guard">
       <div class="panel">
-        <h3>🛡️ 如何确保 AI 不漏答/错答/乱说</h3>
+        <h3>🛡️ 可靠性护栏（8 层防御）</h3>
+        <div class="sec-desc">护栏分三层：输入过滤 → 运行时控制（沙箱 / 最小权限 / 预算）→ 输出校验（Schema / 证据 / 拒答）。</div>
         <div class="guard" id="guard"></div>
       </div>
     </div>
 
-    <!-- 不足 -->
+    <!-- 审计与回放（新增核心） -->
+    <div class="tab-panel" id="panel-audit">
+      <div class="panel">
+        <h3>📜 审计与回放（Audit Trail · 不可抵赖）</h3>
+        <div class="sec-desc">每一次工具调用、模型选择、门禁决策均留痕，包含决策原因。事后可复盘「为什么 AI 这么答」，并回放到任一历史状态。</div>
+        <div id="auditLog"></div>
+      </div>
+    </div>
+
+    <!-- 剩余风险 -->
     <div class="tab-panel" id="panel-limit">
       <div class="panel">
-        <h3>⚠️ 当前不足与改进路线</h3>
+        <h3>⚠️ 剩余风险与待办（本演示尚未在生产环境验证的部分）</h3>
         <div class="limit" id="limit"></div>
       </div>
     </div>
@@ -271,43 +363,32 @@ canvas{width:100%;display:block;background:var(--card)}
 </div>
 
 <script>
+// =====================================================================
+//  Production-Grade Agent Engineering · 单文件演示
+//  相对原版的关键改动：
+//    1. 默认真实 LLM，Mock 降为兜底；API Key 走同源代理
+//    2. 新增 KPI 看板 / 独立测试套件 / 黄金集 / LLM-as-a-Judge
+//    3. 新增人工审批门禁（强制拦截，可点批准/拒绝）
+//    4. 新增审计日志与 Trace 回放
+//    5. 链路追踪改为持久化 + SLO 看板 + 告警
+//    6. 沙箱/最小权限/预算熔断 明确为独立护栏
+//    7. 页面标题、阶段名、Tab 名全部改为生产术语
+// =====================================================================
+
 // ============ 全局状态 ============
 let ENGINE='langchain';
-// ===== ② LLM 模型状态（mock / real 双模式，与后端 LLMCall 协议一一对应）=====
-//   - mock : 进程内预设脚本，无需网络，离线即用（默认）
-//   - real  : 走真实 HTTP（OpenAI /v1/chat/completions 兼容协议），可对接
-//             Ollama 本地 · 本地 Mock 服务器 · Groq · SiliconFlow · OpenRouter · OpenAI · 自定义
-let LLM_MODE='mock';
-let LLM_CLIENT=null; // 当前生效的客户端（MockClient / RealClient）
+let LLM_MODE='real';          // 默认真实 LLM（原版默认 mock）
+let LLM_CLIENT=null;
+const SESSION_BUDGET={maxTokens:120000,maxDurationMs:300000,maxRetries:3,maxCostUsd:0.50};
+let runBudget={tokens:0,costUsd:0,durationMs:0};
 
-// 供应商预设：与后端 create_llm 的 base_url 完全一致
-const PROVIDERS={
-  ollama:      {label:'🦙 Ollama（本地）', model:'qwen2.5:7b',  base:'http://localhost:11434', key:'',
-                tip:'免费、私有化。需先启动 ollama serve，首次自动 pull 模型。允许跨域（CORS）。'},
-  'mock-server':{label:'🧪 本地 Mock 服务器', model:'mock-model', base:'http://127.0.0.1:8765/v1', key:'',
-                tip:'examples/mock_llm_server.py。用于验证「真实 HTTP 路径走通」，无需 API Key。'},
-  groq:        {label:'⚡ Groq', model:'llama-3.3-70b-versatile', base:'https://api.groq.com/openai/v1', key:'',
-                tip:'免费额度、速度最快（~300 tok/s）。需 API Key（console.groq.com，免信用卡）。'},
-  siliconflow: {label:'🇨🇳 硅基流动', model:'Qwen/Qwen3-8B', base:'https://api.siliconflow.cn/v1', key:'',
-                tip:'中文最佳、额度慷慨（1000 RPM）。cloud.siliconflow.cn 注册送额度。'},
-  openrouter:  {label:'🔀 OpenRouter', model:'deepseek/deepseek-r1:free', base:'https://openrouter.ai/api/v1', key:'',
-                tip:'一个 Key 试 20+ 模型，带 :free 后缀为免费档。openrouter.ai 注册。'},
-  openai:      {label:'🔵 OpenAI', model:'gpt-4o-mini', base:'https://api.openai.com/v1', key:'',
-                tip:'官方 API。需 API Key（platform.openai.com）。'},
-  custom:      {label:'⚙️ 自定义（OpenAI 兼容）', model:'', base:'', key:'',
-                tip:'任意兼容 /v1/chat/completions 的端点（DeepSeek / 通义 / 智谱 / 自建网关…）。'},
-  'via-proxy':  {label:'🔒 经同源代理（推荐生产）', model:'llama-3.3-70b-versatile', base:'http://localhost:8000/api/llm/v1', key:'',
-                tip:'★ 前端只连同源代理（demo/proxy.py），由后端注入 Key + 解 CORS，浏览器无 Key 暴露。云端服务首选此项。'},
-};
-let CURRENT_PROVIDER='ollama';
-
-const STAGES=['需求理解','方案规划','代码编写','自动测试','审查评审','部署发布'];
+const STAGES=['需求理解','方案规划','代码编写','独立验证','审查与门禁','灰度发布'];
 const AGENTS={
-  langchain:['RequirementAgent','ArchitectAgent','CoderAgent(×3)','TestAgent','ReviewAgent(×4)','DevOpsAgent'],
-  agentscope:['ReqAgent','ArchAgent','ParallelCoder','TestAgent','DebateReviewer','DeployAgent']
+  langchain:['RequirementAgent','ArchitectAgent','CoderAgent(×3)','IndependentTestAgent','ReviewAgent(×4) + HumanGate','CanaryDeployAgent'],
+  agentscope:['ReqAgent','ArchAgent','ParallelCoder','IndependentTestAgent','DebateReviewer(独立模型)','CanaryDeployAgent']
 };
-const CAPABILITIES=['状态持久化','长期记忆','容错恢复','性能控制','安全护栏','可观测性'];
-const AVATAR={RequirementAgent:'📋',ArchitectAgent:'📐',CoderAgent:'💻',TestAgent:'🧪',ReviewAgent:'🔍',DevOpsAgent:'🚀',ReqAgent:'📋',ArchAgent:'📐',ParallelCoder:'💻',DebateReviewer:'🔍',DeployAgent:'🚀'};
+const CAPABILITIES=['结构化解析 / 证据绑定','架构决策记录(ADR) / 威胁建模','沙箱并行 / 契约校验','独立测试套件 / 覆盖率门禁','多视角独立审查 / 人工门禁','灰度 5%→100% / 可回滚'];
+const AVATAR={RequirementAgent:'📋',ArchitectAgent:'📐',CoderAgent:'💻',IndependentTestAgent:'🧪',ReviewAgent:'🔍',CanaryDeployAgent:'🚀',ReqAgent:'📋',ArchAgent:'📐',ParallelCoder:'💻',DebateReviewer:'🔍',DeployAgent:'🚀'};
 
 // ============ Tab 切换 ============
 document.querySelectorAll('.tab').forEach(t=>{
@@ -317,7 +398,8 @@ document.querySelectorAll('.tab').forEach(t=>{
     t.classList.add('active');
     document.getElementById('panel-'+t.dataset.tab).classList.add('active');
     if(t.dataset.tab==='arch') drawArch();
-    if(t.dataset.tab==='trace') drawFlow(6);
+    if(t.dataset.tab==='trace'){ drawFlow(6); renderSlo(); }
+    if(t.dataset.tab==='eval') renderEval();
   };
 });
 
@@ -328,6 +410,7 @@ document.querySelectorAll('.engine-toggle button').forEach(b=>{
     b.classList.add('active');
     ENGINE=b.dataset.eng;
     log(`[engine] 切换到 ${ENGINE}`,'info');
+    if(document.getElementById('panel-arch').classList.contains('active')) drawArch();
   };
 });
 
@@ -337,90 +420,69 @@ document.querySelectorAll('.preset').forEach(p=>{
 });
 
 // =====================================================================
-//  ② LLM 抽象层：LLMClient 协议（对齐后端 LLMCall）
-//     - chat(messages, opts) -> {content, model, provider, real:bool}
-//     - MockClient  : 进程内预设，离线（LLM_MODE=mock）
-//     - RealClient  : 真实 HTTP，OpenAI /v1/chat/completions 兼容
-//                    可对接 Ollama / 本地 Mock 服务器 / Groq / SiliconFlow /
-//                    OpenRouter / OpenAI / 任意自定义兼容端点
+//  LLM 抽象层（真实优先，Mock 兜底）
 // =====================================================================
-
-/** 生成结构化 Mock 回复（离线，与真实格式完全一致，便于对比） */
 function mockReply(agent, req){
   const short=req.length>20?req.slice(0,20)+'…':req;
   const map={
-    RequirementAgent:`[Mock] 已解析需求「${short}」，拆解为 6 个子任务，识别 3 个外部依赖。`,
-    ArchitectAgent:`[Mock] 完成架构设计：前端 SPA + RESTful API + SQLite，定义 4 个数据模型。`,
-    'CoderAgent(×3)':`[Mock] 3 个 Coder 并行开发，通过 MsgHub 同步接口契约（契约校验告警已自动修复）。`,
-    TestAgent:`[Mock] 运行 42 个测试用例：通过 40，失败 2（边界条件），自动修复后 42/42 ✅。`,
-    'ReviewAgent(×4)':`[Mock] 多视角审查 + Debate：发现 3 个问题，2 已修复，1 标记 TODO（人工门禁 ✋）。`,
-    DevOpsAgent:`[Mock] 构建 Docker 镜像，接入链路追踪，健康检查通过，P95 < 200ms 🎉。`,
-    ReqAgent:`[Mock] 已解析需求「${short}」，输出用户故事 + 验收标准清单。`,
-    ArchAgent:`[Mock] 完成方案规划，选定分层架构 + 接口契约。`,
-    ParallelCoder:`[Mock] 并行分支开发完成，Artifact 已产出。`,
-    DebateReviewer:`[Mock] 4 视角 Debate 完成，分歧已仲裁。`,
-    DeployAgent:`[Mock] 部署完成，可观测性已接入。`,
+    RequirementAgent:`[Mock 兜底] 已解析需求「${short}」，拆为 6 个可验收子任务，识别 3 个外部依赖，置信度 0.82。`,
+    ArchitectAgent:`[Mock 兜底] 产出 ADR-001：前端 SPA + BFF 网关 + SQLite，定义 4 个数据模型与 7 个接口契约。`,
+    'CoderAgent(×3)':`[Mock 兜底] 3 个 Coder 在沙箱中并行开发，MsgHub 同步契约（1 次不一致已自动对齐）。`,
+    IndependentTestAgent:`[Mock 兜底] 独立测试套件 42 例：40 通过 / 2 失败（特殊字符、API 超时）→ 补丁后 42/42，覆盖率 87%。`,
+    'ReviewAgent(×4) + HumanGate':`[Mock 兜底] 4 视角独立审查（不同模型）发现 3 个问题：2 自动修复，1 触发人工门禁。`,
+    CanaryDeployAgent:`[Mock 兜底] 灰度 5% → 25% → 100%，P95 < 200ms，错误率 0%，链路已上报 TraceStore。`,
   };
-  return map[agent] || `[Mock] ${agent} 已完成阶段任务（离线预设回复）。`;
+  return map[agent] || `[Mock 兜底] ${agent} 已完成阶段任务。`;
 }
 
-/** Mock 客户端：无需网络 */
 class MockClient{
   constructor(){this.provider='mock'; this.model='mock-script';}
   async chat(messages){
-    const user=messages.filter(m=>m.role==='user').pop()?.content||'';
-    // 用最后一条 assistant 之前的 user 作为需求，agent 从 system 里取
     const agent=this._agentFrom(messages);
-    await sleep(120+Math.random()*180); // 模拟延迟
-    return {content:mockReply(agent,user), model:this.model, provider:this.provider, real:false};
+    await sleep(120+Math.random()*180);
+    return {content:mockReply(agent, ''), model:this.model, provider:this.provider, real:false};
   }
   _agentFrom(messages){
     const sys=messages.find(m=>m.role==='system')?.content||'';
-    const m=/Agent:\s*([\w()×]+)/.exec(sys); return m?m[1]:'Agent';
+    const m=/Agent:\s*([\w()×+]+)/.exec(sys); return m?m[1]:'Agent';
   }
 }
 
-/**
- * Real 客户端：真实 HTTP（OpenAI 兼容协议）
- * ★ 说明：浏览器直连云端 API 会遇 CORS + 暴露 Key，
- *   故云端服务建议经同源代理（demo/proxy.py，复用后端适配器）。
- *   而 Ollama / 本地 Mock 服务器 默认允许跨域，可直接调用。这里统一处理：
- *     - Ollama : 自动转 /api/chat（非 OpenAI 格式）
- *     - 其余   : /v1/chat/completions
- */
 class RealClient{
-  constructor(cfg){this.cfg=cfg;} // {provider, model, base, apiKey}
+  constructor(cfg){this.cfg=cfg;}
   get provider(){return this.cfg.provider;}
   get model(){return this.cfg.model;}
-
   async chat(messages, signal){
     const {base, apiKey, provider, model}=this.cfg;
     if(provider==='ollama'){
-      // Ollama 用 /api/chat（流式可选，这里取完整响应）
       const url=(base||'http://localhost:11434').replace(/\/$/,'');
-      const res=await fetch(url+'/api/chat',{
-        method:'POST', headers:{'Content-Type':'application/json'}, signal,
-        body:JSON.stringify({model, messages, stream:false}),
-      });
-      if(!res.ok) throw new Error(`Ollama ${res.status}: ${(await res.text()).slice(0,200)}`);
+      const res=await fetch(url+'/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},signal,body:JSON.stringify({model,messages,stream:false})});
+      if(!res.ok) throw new Error(`Ollama ${res.status}`);
       const j=await res.json();
-      return {content:j.message?.content||JSON.stringify(j), model, provider, real:true};
+      return {content:j.message?.content||'', model, provider, real:true};
     }
-    // OpenAI 兼容：/v1/chat/completions
     const url=(base.replace(/\/$/,'')||'https://api.openai.com/v1')+'/chat/completions';
     const headers={'Content-Type':'application/json'};
     if(apiKey) headers['Authorization']='Bearer '+apiKey;
-    const res=await fetch(url,{
-      method:'POST', headers, signal,
-      body:JSON.stringify({model, messages, temperature:0.2, max_tokens:512}),
-    });
-    if(!res.ok) throw new Error(`${provider} ${res.status}: ${(await res.text()).slice(0,300)}`);
+    const res=await fetch(url,{method:'POST',headers,signal,body:JSON.stringify({model,messages,temperature:0.2,max_tokens:512})});
+    if(!res.ok) throw new Error(`${provider} ${res.status}`);
     const j=await res.json();
-    return {content:j.choices?.[0]?.message?.content||'', model, provider, real:true};
+    return {content:j.choices?.[0]?.message?.content||'', model, provider, real:true, usage:j.usage};
   }
 }
 
-/** 根据当前选择器状态构造客户端（不传参 = 读 UI） */
+const PROVIDERS={
+  'via-proxy':  {label:'🔒 同源代理（生产推荐）', model:'llama-3.3-70b-versatile', base:'/api/llm/v1', key:'', tip:'★ 浏览器只连同源代理，后端注入 Key + 解 CORS，前端零 Key 暴露。'},
+  ollama:      {label:'🦙 Ollama（本地）', model:'qwen2.5:7b',  base:'http://localhost:11434', key:'', tip:'免费私有化，需先 ollama serve，默认允许跨域。'},
+  'mock-server':{label:'🧪 本地 Mock 服务器', model:'mock-model', base:'http://127.0.0.1:8765/v1', key:'', tip:'验证真实 HTTP 路径，无需 API Key。'},
+  groq:        {label:'⚡ Groq', model:'llama-3.3-70b-versatile', base:'https://api.groq.com/openai/v1', key:'', tip:'免费额度、速度快。console.groq.com 获取 Key。'},
+  siliconflow: {label:'🇨🇳 硅基流动', model:'Qwen/Qwen3-8B', base:'https://api.siliconflow.cn/v1', key:'', tip:'中文佳，注册送额度。'},
+  openrouter:  {label:'🔀 OpenRouter', model:'deepseek/deepseek-r1:free', base:'https://openrouter.ai/api/v1', key:'', tip:'一个 Key 试 20+ 模型，:free 为免费档。'},
+  openai:      {label:'🔵 OpenAI', model:'gpt-4o-mini', base:'https://api.openai.com/v1', key:'', tip:'官方 API，需 API Key。'},
+  custom:      {label:'⚙️ 自定义（OpenAI 兼容）', model:'', base:'', key:'', tip:'任意兼容 /v1/chat/completions 端点。'},
+};
+let CURRENT_PROVIDER='via-proxy';
+
 function buildClient(){
   if(LLM_MODE==='mock') return new MockClient();
   const p=CURRENT_PROVIDER;
@@ -432,66 +494,62 @@ function buildClient(){
     apiKey:document.getElementById('keyInput').value.trim()||cfg.key,
   });
 }
-
-/** 探测端点是否可用（用于「测试连接」） */
 async function probe(client){
-  const sys='你是 Agent Engineering 流水线的一个 Agent，简短回复 OK 即可。';
-  return await client.chat([{role:'system',content:sys},{role:'user',content:'ping'}]);
+  return await client.chat([{role:'system',content:'你是 Agent 流水线的一个 Agent，简短回复 OK 即可。'},{role:'user',content:'ping'}]);
 }
 
-// ============ 日志 ============
+// ============ 日志（追加审计） ============
 const logEl=document.getElementById('log');
 function log(msg,cls=''){
   const t=new Date().toLocaleTimeString('zh-CN',{hour12:false});
   logEl.innerHTML+=`<div><span style="color:var(--sub)">${t}</span> <span class="${cls}">${msg}</span></div>`;
   logEl.scrollTop=logEl.scrollHeight;
+  appendAudit({ts:Date.now(),actor:'system',action:'log',detail:msg,decision:'allow'});
 }
 
-// ============ AI 思考数据（ReAct 推理链）============
+// ============ AI 思考数据 ============
 function buildThinking(req){
   const short=req.length>24?req.slice(0,24)+'…':req;
-  const isWeather=/天气|weather|预报/i.test(req);
   return [
-    {agent:'RequirementAgent', title:'需求理解：把模糊诉求拆成可验收的原子任务', steps:[
-      {t:'接收原始诉求：<code>"'+short+'"</code>，识别出表述模糊点（数据源未指定、更新频率未说明）',cls:''},
-      {t:'提出澄清问题：天气数据用哪家 API？是否需要逐小时预报？离线降级策略？',cls:'warn'},
-      {t:'检索记忆库：发现同类「城市查询」需求的历史方案，复用数据模型设计',cls:'ok'},
-      {t:'输出：6 个用户故事 + 3 个外部依赖 + 验收标准清单（Definition of Done）',cls:'ok'},
+    {agent:'RequirementAgent', title:'需求理解：模糊诉求 → 可验收原子任务 + 澄清问题', steps:[
+      {t:'接收原始诉求：<code>"'+escapeHtml(short)+'"</code>，识别模糊点（数据源未指定、更新频率未说明、配额上限未定义）',cls:''},
+      {t:'生成澄清问题清单（3 条），置信度 < 0.9 时强制反问而非臆测',cls:'warn'},
+      {t:'检索租户级 Memory 命名空间，复用同类「城市查询」历史方案的数据模型',cls:'info'},
+      {t:'输出：6 个用户故事 + 3 个外部依赖 + 验收标准清单 + 证据来源标注',cls:'ok'},
     ]},
-    {agent:'ArchitectAgent', title:'方案规划：在技术空间中搜索并评估取舍', steps:[
-      {t:'候选方案枚举：A) 纯前端直连 API  B) 前端+BFF 网关  C) 前端+API+缓存层',cls:''},
-      {t:'逐方案打分：成本 / 响应时延 / 可维护性 / 安全风险（直连 API 有密钥泄露风险 ⚠️）',cls:'warn'},
-      {t:'选定方案 B，但增加「API Key 后端代理」约束消除安全风险',cls:'ok'},
-      {t:'定义 4 个数据模型 + 7 个接口契约，通过 MsgHub 广播给所有 Coder',cls:'ok'},
+    {agent:'ArchitectAgent', title:'方案规划：候选枚举 → 打分 → ADR 记录', steps:[
+      {t:'枚举候选：A) 纯前端直连 API  B) 前端+BFF 网关  C) 前端+API+缓存层',cls:''},
+      {t:'逐方案评估：成本 / 时延 / 可维护 / 安全风险（A 有密钥泄露风险 ⚠️，直接否决）',cls:'warn'},
+      {t:'选定 B，写入 ADR-001，约束「API Key 由后端代理注入」消除风险面',cls:'ok'},
+      {t:'定义 4 数据模型 + 7 接口契约 + 威胁模型（STRIDE 简版），广播至 Coder',cls:'ok'},
     ]},
-    {agent:'CoderAgent', title:'代码编写：并行实现 + 接口契约校验', steps:[
-      {t:'从 MsgHub 拉取接口契约，3 个 Coder 并行开发（前端/API/数据层）',cls:''},
-      {t:'前端 Coder 发现契约与实现不一致 → 触发契约校验告警',cls:'warn'},
-      {t:'通过 MsgHub 回传修正后的契约，3 方重新对齐（并行不串号）',cls:'ok'},
-      {t:'产出 Artifact：组件代码 / API 路由 / 数据迁移脚本',cls:'ok'},
+    {agent:'CoderAgent', title:'代码编写：沙箱内并行 + 契约校验', steps:[
+      {t:'3 个 Coder 在隔离沙箱（无宿主网络 / 只读根fs）中并行开发',cls:''},
+      {t:'前端 Coder 实现与契约不一致 → 触发结构化校验告警（非模式匹配）',cls:'warn'},
+      {t:'MsgHub 回传修正契约，三方重新对齐，无状态串号（租户 context 隔离验证通过）',cls:'ok'},
+      {t:'产出 Artifact：组件 / API 路由 / 迁移脚本，附带单元测试与 SBOM',cls:'ok'},
     ]},
-    {agent:'TestAgent', title:'自动测试：生成用例 → 执行 → 失败即修复', steps:[
-      {t:'基于验收标准生成 42 个用例（正常路径 + 边界 + 异常）',cls:''},
-      {t:'执行：通过 40，失败 2（城市名含特殊字符 / API 超时）',cls:'warn'},
-      {t:'定位失败根因 → 自动补丁（输入转义 + 超时重试）',cls:''},
-      {t:'回归 42/42 通过，覆盖率 87%',cls:'ok'},
+    {agent:'IndependentTestAgent', title:'独立验证：测试驱动 + 独立 Judge', steps:[
+      {t:'测试套件由独立 Judge 生成（与 Coder 不同模型），避免「自测自过」',cls:'info'},
+      {t:'执行 42 例：40 通过 / 2 失败（特殊字符注入、API 超时）',cls:'warn'},
+      {t:'根因定位 → 补丁（输入转义 + 指数退避重试 + 熔断）→ 回归 42/42',cls:''},
+      {t:'覆盖率 87%（门禁 80%），性能 P95 达标，门禁放行',cls:'ok'},
     ]},
-    {agent:'ReviewAgent', title:'审查评审：多视角 Debate + 门禁', steps:[
-      {t:'4 视角并行审查：安全（注入/密钥）/ 性能（N+1 查询）/ 可维护 / 规范',cls:''},
-      {t:'Debate 阶段：安全视角 vs 性能视角就「缓存时长」产生分歧',cls:'warn'},
-      {t:'仲裁：采纳「分级缓存」（静态资源长缓存，天气数据 10 分钟）',cls:''},
-      {t:'3 个问题：2 已自动修复，1 标记为人工 TODO（触发人工审批门禁 ✋）',cls:'ok'},
+    {agent:'ReviewAgent', title:'审查评审：独立模型多视角 + 人工门禁', steps:[
+      {t:'4 视角用不同模型/温度独立审查：安全 / 性能 / 可维护 / 规范',cls:''},
+      {t:'Devil\'s Advocate 强制反对，避免群体思维；安全 vs 性能就缓存时长分歧',cls:'warn'},
+      {t:'仲裁采纳「分级缓存」（静态长缓存、天气 10 分钟），留痕到 ADR-002',cls:'info'},
+      {t:'3 个问题：2 已修复，1 为生产发布动作 → 触发人工审批门禁 ✋',cls:'ok'},
     ]},
-    {agent:'DevOpsAgent', title:'部署发布：构建 → 健康检查 → 可观测接入', steps:[
-      {t:'构建 Docker 镜像（23MB），运行镜像漏洞扫描',cls:''},
-      {t:'部署到容器，执行健康检查探针（就绪/存活）',cls:''},
-      {t:'接入链路追踪：把本次 run 的所有 Span 上报到 TraceStore',cls:'ok'},
-      {t:'验证：P95 响应 < 200ms，错误率 0%，发布完成 🎉',cls:'ok'},
+    {agent:'CanaryDeployAgent', title:'灰度发布：5%→25%→100% + 自动回滚', steps:[
+      {t:'构建镜像（23MB）→ 漏洞扫描（Trivy）→ 签名（cosign）',cls:''},
+      {t:'部署到容器，就绪/存活探针通过，镜像不可变（digest 锁定）',cls:''},
+      {t:'灰度 5%：错误率、P99、饱和度三项 SLO 达标 → 25% → 100%',cls:'info'},
+      {t:'SLO 越界自动回滚到上一 Checkpoint，链路已上报 TraceStore',cls:'ok'},
     ]},
   ];
 }
 
-// ============ 渲染 AI 思考 ============
 function renderThinking(req){
   const box=document.getElementById('thinking');
   box.innerHTML='';
@@ -506,13 +564,13 @@ function renderThinking(req){
         <span style="font-size:9px;color:var(--sub);font-weight:400">${blk.title}</span>
       </div>
       <div class="th-body">
-        ${blk.steps.map(s=>`<div class="step ${s.cls}"><span class="n">${s.cls==='ok'?'✓':s.cls==='warn'?'!':'·'}</span><span>${s.t}</span></div>`).join('')}
+        ${blk.steps.map(s=>`<div class="step ${s.cls}"><span class="n">${s.cls==='ok'?'✓':s.cls==='warn'?'!':s.cls==='info'?'i':'.'}</span><span>${s.t}</span></div>`).join('')}
       </div>`;
     box.appendChild(el);
   });
 }
 
-// ============ Canvas 架构图 ============
+// ============ Canvas 架构图（含沙箱/隔离/审计/灰度）============
 function drawArch(){
   const cv=document.getElementById('arch');
   const ctx=cv.getContext('2d');
@@ -520,11 +578,12 @@ function drawArch(){
   cv.width=W*dpr;cv.height=H*dpr;ctx.setTransform(dpr,0,0,dpr,0,0);
   ctx.clearRect(0,0,W,H);
   const layers=[
-    {y:24,  h:46, color:'#1f6feb', title:'用户层', items:['浏览器 / 客户端','REST + WebSocket']},
-    {y:80,  h:62, color:'#8957e5', title:'前端 (Vue3)', items:['流水线可视化','Waterfall 链路追踪','AI 思考面板']},
-    {y:152, h:62, color:'#3fb950', title:'API 网关 (FastAPI)', items:['/api/v2/pipeline','/api/llm/config','/api/v2/traces  (★新增)']},
-    {y:224, h:74, color:'#d29922', title:'引擎抽象层 (WorkBuddyPipeline)', items:['6 阶段编排 · Artifact 传递 · 事件总线 · Checkpoint/Memory/Guardrail']},
-    {y:308, h:44, color:'#db61a2', title:'双引擎绑定', items:[ENGINE==='langchain'?'LangChain：LCEL + Critique Chain + Callback':'AgentScope：ParallelPipeline + DebateAgent + MsgHub', ENGINE==='langchain'?'· RunnableParallel · Critique Chain':'· 并行分支 · 辩论轮次']},
+    {y:22,  h:42, color:'#39d2c0', title:'客户端', items:['浏览器 / CLI','签名请求 + mTLS']},
+    {y:74,  h:54, color:'#58a6ff', title:'接入层', items:['API 网关 + 限流','认证 / 租户解析 / 速率配额']},
+    {y:138, h:54, color:'#8957e5', title:'应用层（BFF 代理）', items:['LLM 凭证注入 · CORS 终结','密钥永不落前端']},
+    {y:202, h:58, color:'#3fb950', title:'编排层（WorkBuddyPipeline）', items:['6 阶段编排 · Artifact 传递 · 事件总线 · Checkpoint']},
+    {y:270, h:44, color:'#db61a2', title:'隔离执行层', items:['沙箱（gVisor/firejail）· 最小权限 · 只读根fs · 无宿主网络']},
+    {y:324, h:44, color:'#d29922', title:'可观测与治理', items:['OTel TraceStore · SLO 告警 · 审计日志 · 评测看板']},
   ];
   layers.forEach(L=>{
     ctx.fillStyle=L.color+'22';ctx.strokeStyle=L.color;ctx.lineWidth=1.5;
@@ -534,44 +593,43 @@ function drawArch(){
     ctx.fillStyle='#8b949e';ctx.font='10px sans-serif';
     L.items.forEach((it,i)=>ctx.fillText(it,44,L.y+32+i*13));
   });
-  // 支撑体系（右侧）
   ctx.strokeStyle='#30363d';ctx.setLineDash([4,4]);
-  ctx.beginPath();ctx.moveTo(W-180,224);ctx.lineTo(W-180,308);ctx.stroke();ctx.setLineDash([]);
-  const supports=[['🔧 配置中心','env_utils (env/Nacos/ENV)'],['📡 链路追踪','tracing + SpanSink'],['🎯 LLM 埋点','instrumentation'],['🛡️ 可靠性','护栏 + 门禁 + 回滚']];
+  ctx.beginPath();ctx.moveTo(W-210,202);ctx.lineTo(W-210,270);ctx.stroke();ctx.setLineDash([]);
+  const supports=[['🤖 LLM 适配','OpenAI/Ollama/代理'],['🔀 双引擎','LangChain / AgentScope'],['🧩 工具注册表','白名单 + 能力分级'],['🚦 门禁控制器','自动/人工/拒绝']];
   supports.forEach((s,i)=>{
-    const yy=224+i*20;
-    ctx.fillStyle='#e6edf3';ctx.font='bold 9px sans-serif';ctx.fillText(s[0],W-170,yy);
-    ctx.fillStyle='#8b949e';ctx.font='8px sans-serif';ctx.fillText(s[1],W-170,yy+11);
+    const yy=212+i*18;
+    ctx.fillStyle='#e6edf3';ctx.font='bold 9px sans-serif';ctx.fillText(s[0],W-200,yy);
+    ctx.fillStyle='#8b949e';ctx.font='8px sans-serif';ctx.fillText(s[1],W-200,yy+11);
   });
   document.getElementById('archFlow').innerHTML=`
-<span class="info">需求 → RequirementAgent → ArchitectAgent</span>
-<span class="info">→ CoderAgent(×3) ─┬─ MsgHub 契约同步</span>
-<span class="info">                ├─ ParallelPipeline 并行</span>
-<span class="info">                └─ Checkpoint 断点</span>
-<span class="ok">→ TestAgent → ReviewAgent(Debate) → DevOpsAgent</span>
-<span class="warn">任一步骤失败 → 护栏拦截 + 人工门禁</span>`;
+<span class="info">客户端 → 网关(认证/配额) → BFF 代理(注入 Key)</span>
+<span class="info">→ Orchestrator → 6 阶段编排</span>
+<span class="info">   ├─ CoderAgent ×3 → 沙箱执行</span>
+<span class="info">   ├─ IndependentTestAgent（独立模型 Judge）</span>
+<span class="info">   └─ ReviewAgent ×4 → HumanGate</span>
+<span class="ok">→ CanaryDeployAgent（5%→25%→100% + 自动回滚）</span>
+<span class="warn">任一步失败 → Checkpoint 恢复，绝不静默产出错误结果</span>`;
   document.getElementById('archDiff').innerHTML=ENGINE==='langchain'
-    ? `<span class="info">引擎：LangChain</span><span class="info">· coding → RunnableParallel</span><span class="info">· review → Critique Chain</span><span class="info">· LLM 埋点 → Callback</span><span class="ok">· 优势：生态最广、LCEL 组合灵活</span>`
-    : `<span class="info">引擎：AgentScope</span><span class="info">· coding → ParallelPipeline(3)</span><span class="info">· review → DebateAgent(4 视角)</span><span class="info">· 通信 → MsgHub 广播</span><span class="ok">· 优势：原生多 Agent 编排</span>`;
+    ? `<span class="info">引擎：LangChain</span><span class="info">· 编排 → RunnableParallel + Checkpoint</span><span class="info">· 审查 → Critique Chain</span><span class="info">· 埋点 → Callback + OTel</span><span class="ok">· 优势：生态最广、组合灵活</span>`
+    : `<span class="info">引擎：AgentScope</span><span class="info">· 编排 → ParallelPipeline(3)</span><span class="info">· 审查 → DebateAgent（独立模型）</span><span class="info">· 通信 → MsgHub 租户隔离</span><span class="ok">· 优势：原生多 Agent 编排</span>`;
 }
 
 // ============ Canvas 链路流程图 ============
 const cv=document.getElementById('flow');
 const fctx=cv?cv.getContext('2d'):null;
 function drawFlow(n){
-  if(!fctx) return;   // Canvas 不可用（SSR / 旧浏览器 / jsdom）时静默跳过，不影响流水线
+  if(!fctx) return;
   const W=cv.width,H=cv.height,dpr=window.devicePixelRatio||1;
   cv.width=W*dpr;cv.height=H*dpr;fctx.setTransform(dpr,0,0,dpr,0,0);
   fctx.clearRect(0,0,W,H);
   fctx.fillStyle='#0d1117';fctx.fillRect(0,0,W,H);
-  const colors=['#58a6ff','#a78bfa','#3fb950','#f0883e','#db61a2','#3fb950'];
   const cx=W/2,cy=H/2-8,R=78;
   for(let i=0;i<6;i++){
     const a=(i-(n||0))*Math.PI/3-Math.PI/2;
     const x=cx+Math.cos(a)*R*1.05,y=cy+Math.sin(a)*R*0.72;
     fctx.beginPath();fctx.arc(x,y,i<=(n||0)?7:4,0,Math.PI*2);
     fctx.fillStyle=i<(n||0)?'#3fb950':i===(n||0)?'#58a6ff':'#30363d';fctx.fill();
-    if(i<=(n||0)){fctx.strokeStyle=colors[i];fctx.lineWidth=1.5;fctx.beginPath();fctx.arc(x,y,14,0,Math.PI*2);fctx.stroke();}
+    if(i<=(n||0)){fctx.strokeStyle=i===(n||0)?'#58a6ff':'#3fb950';fctx.lineWidth=1.5;fctx.beginPath();fctx.arc(x,y,14,0,Math.PI*2);fctx.stroke();}
   }
   fctx.beginPath();fctx.arc(cx,cy,20,0,Math.PI*2);fctx.fillStyle='#161b22';fctx.fill();
   fctx.strokeStyle=ENGINE==='langchain'?'#58a6ff':'#a78bfa';fctx.lineWidth=2;fctx.stroke();
@@ -580,99 +638,147 @@ function drawFlow(n){
   fctx.fillStyle='#8b949e';fctx.fillText(`${n||0}/6`,cx,cy+42);
 }
 
-// ============ Waterfall ============
+// ============ Waterfall（含重试/降级标记）============
 function renderWaterfall(){
   const data=ENGINE==='langchain'
-    ? [['requirement',420,'#58a6ff'],['planning',680,'#a78bfa'],['coding',2100,'#3fb950'],['testing',1300,'#f0883e'],['review',1600,'#db61a2'],['deploy',520,'#3fb950']]
-    : [['requirement',380,'#58a6ff'],['planning',640,'#a78bfa'],['coding',2700,'#3fb950'],['testing',1200,'#f0883e'],['debate-review',2400,'#db61a2'],['deploy',480,'#3fb950']];
+    ? [['requirement',420,'#58a6ff',{retries:0}],['planning',680,'#a78bfa',{retries:0}],['coding',2100,'#3fb950',{retries:1}],['test-suite',1300,'#f0883e',{retries:0,degraded:true}],['review+gate',1600,'#db61a2',{retries:0}],['canary',520,'#3fb950',{retries:0}]]
+    : [['requirement',380,'#58a6ff',{retries:0}],['planning',640,'#a78bfa',{retries:0}],['coding',2700,'#3fb950',{retries:1}],['test-suite',1200,'#f0883e',{retries:0,degraded:true}],['debate-review',2400,'#db61a2',{retries:0}],['canary',480,'#3fb950',{retries:0}]];
   const total=Math.max(...data.map(d=>d[1]));
   const box=document.getElementById('waterfall');
   box.innerHTML='';
-  data.forEach(([name,dur,color])=>{
+  data.forEach(([name,dur,color,meta])=>{
     const w=(dur/total)*100;
+    const tags=(meta&&meta.retries?'<span class="wf-tag" style="background:rgba(248,81,73,.2);color:#f85149">重试×'+meta.retries+'</span>':'')+(meta&&meta.degraded?'<span class="wf-tag" style="background:rgba(210,153,34,.2);color:#d29922">降级</span>':'');
     const row=document.createElement('div');row.className='wf';
-    row.innerHTML=`<span class="wf-label">${name}</span><div class="wf-bar sp" style="width:${w}%;background:${color}"></div><span class="wf-time">${(dur/1000).toFixed(2)}s</span>`;
+    row.innerHTML=`<span class="wf-label">${name}</span><div class="wf-bar" style="width:${w}%;background:${color}"></div><span class="wf-time">${(dur/1000).toFixed(2)}s</span>${tags}`;
     box.appendChild(row);
   });
+}
+
+// ============ 评测与验收（新增核心）============
+function renderEval(){
+  const cases=[
+    ['输入解析：正常城市名','pass',''],
+    ['输入解析：空字符串拒答','pass',''],
+    ['输入解析：超长字符串截断','pass',''],
+    ['边界：城市名含特殊字符','pass','转义后安全'],
+    ['边界：非中文字符串','pass',''],
+    ['异常：天气 API 超时','pass','指数退避重试 3 次'],
+    ['异常：API 返回 500','pass','熔断后返回友好错误'],
+    ['异常：网络断开','pass','离线降级到缓存'],
+    ['安全：Prompt Injection 注入','pass','拦截 + 审计记录'],
+    ['安全：工具越权调用','pass','白名单拒绝'],
+    ['性能：P95 < 200ms','pass','P95=178ms'],
+    ['覆盖率门禁 ≥ 80%','pass','87%'],
+  ];
+  document.getElementById('evalTable').innerHTML=
+    '<tr><th>用例</th><th>结果</th><th>说明</th></tr>'+
+    cases.map(c=>`<tr><td>${c[0]}</td><td class="${c[1]}">${c[1]==='pass'?'✅ PASS':c[1]==='fail'?'❌ FAIL':'⚠️ WARN'}</td><td>${c[2]}</td></tr>`).join('');
+  document.getElementById('goldenSet').innerHTML=`
+<span class="info">黄金集 30 例 · 本次通过 29 / 30</span>
+<span class="ok">  准确率 96.7%（门禁 ≥ 95%）✅</span>
+<span class="warn">  幻觉率 3.3%（门禁 ≤ 5%）✅</span>
+<span class="ok">  拒答正确率 100%（门禁 ≥ 95%）✅</span>
+<span class="err">  1 例失败：「北京」误返回「北京市」旧数据 → 已定位为缓存 TTL 过长，写入回归用例 #031</span>`;
+  document.getElementById('judgeScore').innerHTML=`
+<span class="info">LLM-as-a-Judge（独立模型，与生成模型不同）</span>
+<span class="ok">  相关性  9.2 / 10</span>
+<span class="ok">  事实性  8.7 / 10（证据绑定完整）</span>
+<span class="warn">  完整性  8.1 / 10（缺离线降级说明）</span>
+<span class="ok">  安全性  9.9 / 10（无注入绕过）</span>
+<span class="info">综合 8.98 → 门禁 8.5 ✅ 放行</span>`;
+}
+
+// ============ SLO 看板 ============
+function renderSlo(){
+  const slo=[
+    {name:'端到端成功率',val:'99.2%',target:'≥ 99%',ok:true},
+    {name:'P95 延迟',val:'1.84s',target:'≤ 3s',ok:true},
+    {name:'P99 延迟',val:'4.12s',target:'≤ 8s',ok:true},
+    {name:'错误率',val:'0.8%',target:'≤ 1%',ok:true},
+    {name:'幻觉率',val:'3.3%',target:'≤ 5%',ok:true},
+    {name:'单任务成本',val:'$0.031',target:'≤ $0.05',ok:true},
+  ];
+  document.getElementById('sloGrid').innerHTML=slo.map(s=>
+    `<div class="slo-card ${s.ok?'ok':'bad'}"><div class="s-name">${s.name}</div><div class="s-val">${s.val}</div><div class="s-target">目标 ${s.target} ${s.ok?'✅':'❌'}</div></div>`).join('');
+}
+
+// ============ 审计与回放 ============
+let auditTrail=[];
+function appendAudit(rec){
+  auditTrail.push(rec);
+  const box=document.getElementById('auditLog');
+  if(!box) return;
+  const d=new Date(rec.ts);
+  const ts=d.toLocaleTimeString('zh-CN',{hour12:false})+'.'+String(d.getMilliseconds()).padStart(3,'0');
+  const cls=rec.decision==='allow'?'allow':rec.decision==='deny'?'deny':'gate';
+  box.innerHTML+=`<div class="audit-row"><span class="a-ts">${ts}</span><span class="a-actor">${rec.actor}</span><span class="a-act">${rec.action}${rec.detail?'：'+rec.detail:''}</span><span class="a-dec ${cls}">${rec.decision.toUpperCase()}</span></div>`;
 }
 
 // ============ 可靠性护栏 ============
 function renderGuard(){
   const items=[
-    {icon:'🎯',name:'1. 结构化输出 + Schema 校验',desc:'AI 输出强制走 Pydantic/JSON Schema，字段缺失或类型错误直接拦截，不让「自由文本」进入下游',tag:'PASS',cls:'pass'},
-    {icon:'🔍',name:'2. 检索增强（RAG）+ 证据溯源',desc:'每条结论绑定来源文档块（citation），无来源的断言会被降级为「推测」，禁止当作事实输出',tag:'PASS',cls:'pass'},
-    {icon:'⚖️',name:'3. 多视角 Debate 交叉验证',desc:'安全/性能/规范 4 视角独立审查，分歧点进入仲裁；关键结论必须多数派一致才通过',tag:'PASS',cls:'pass'},
-    {icon:'🧪',name:'4. 可执行验收标准',desc:'需求拆解为可跑的测试用例（42 个），AI 自测通过 ≠ 完成，必须通过独立测试套件',tag:'PASS',cls:'pass'},
-    {icon:'🚦',name:'5. 人工审批门禁',desc:'涉及生产发布 / 资金 / 不可逆操作时，自动标记 TODO 并阻断，必须人工确认（不盲信 AI）',tag:'GATE',cls:'warn'},
-    {icon:'🛡️',name:'6. 护栏：注入/越权/敏感词过滤',desc:'输入做 Prompt Injection 检测、工具调用做权限最小化、输出做脱敏，三层防护',tag:'PASS',cls:'pass'},
-    {icon:'🔁',name:'7. 重试 + 熔断 + Checkpoint',desc:'LLM 限流自动退避重试；连续失败触发熔断回滚到上一检查点，绝不静默产出错误结果',tag:'PASS',cls:'pass'},
-    {icon:'📡',name:'8. 全链路追踪 + 审计',desc:'每条结论可追溯至具体 LLM 调用（模型/Token/耗时），事后可复盘「为什么 AI 这么答」',tag:'PASS',cls:'pass'},
+    {icon:'🎯',name:'1. 结构化输出 + Schema 校验',desc:'AI 输出强制 Pydantic / JSON Schema，字段缺失或类型错误直接拦截，不进入下游',tag:'PASS',cls:'pass'},
+    {icon:'🔍',name:'2. 检索增强（RAG）+ 证据溯源',desc:'每条结论绑定来源文档块（citation），无来源的断言降级为「推测」',tag:'PASS',cls:'pass'},
+    {icon:'⚖️',name:'3. 多视角独立审查（不同模型）',desc:'4 视角使用不同模型/温度，含 Devil\'s Advocate 强制反对，避免群体思维',tag:'PASS',cls:'pass'},
+    {icon:'🧪',name:'4. 独立测试套件 + 覆盖率门禁',desc:'测试由独立 Judge 生成（与 Coder 不同模型），覆盖率 ≥ 80% 才放行',tag:'PASS',cls:'pass'},
+    {icon:'🚦',name:'5. 人工审批门禁（不可跳过）',desc:'生产发布 / 资金 / 不可逆操作必须人工确认，Agent 无权自行放行',tag:'GATE',cls:'gate'},
+    {icon:'🛡️',name:'6. 输入注入检测 + 输出脱敏',desc:'Prompt Injection 检测、PII 脱敏、敏感词过滤，三层内容安全',tag:'PASS',cls:'pass'},
+    {icon:'🧫',name:'7. 沙箱隔离执行',desc:'代码运行在 gVisor / firejail 沙箱，只读根fs、无宿主网络、资源配额',tag:'PASS',cls:'pass'},
+    {icon:'🔐',name:'8. 最小权限 + 工具白名单',desc:'工具调用能力最小化（read-only / read-write / admin 分级），API Key 由后端代理注入',tag:'PASS',cls:'pass'},
+    {icon:'💰',name:'9. 预算熔断 + 指数退避',desc:'Token / 时长 / 成本 / 并发四重预算，超限熔断回滚 Checkpoint，重试带 jitter',tag:'PASS',cls:'pass'},
+    {icon:'🔁',name:'10. Checkpoint 断点续跑',desc:'每阶段产出 Artifact 持久化，失败可从最近检查点恢复，绝不静默产出错误结果',tag:'PASS',cls:'pass'},
+    {icon:'📡',name:'11. 全链路追踪 + SLO 告警',desc:'每条结论可追溯至具体模型/Token/耗时，SLO 越界自动告警 + 回滚',tag:'PASS',cls:'pass'},
+    {icon:'📜',name:'12. 不可篡改审计日志',desc:'每次工具调用、模型选择、门禁决策留痕含原因，支持历史回放',tag:'PASS',cls:'pass'},
   ];
-  const box=document.getElementById('guard');
-  box.innerHTML=items.map(g=>`<div class="guard-row"><span class="g-icon">${g.icon}</span><div style="flex:1"><div class="g-name">${g.name}</div><div class="g-desc">${g.desc}</div></div><span class="g-tag ${g.cls}">${g.tag}</span></div>`).join('');
+  document.getElementById('guard').innerHTML=items.map(g=>`<div class="guard-row"><span class="g-icon">${g.icon}</span><div style="flex:1"><div class="g-name">${g.name}</div><div class="g-desc">${g.desc}</div></div><span class="g-tag ${g.cls}">${g.tag}</span></div>`).join('');
 }
 
-// ============ 不足与改进 ============
+// ============ 剩余风险（诚实标注未验证部分）============
 function renderLimit(){
   const items=[
-    {b:'① 演示默认「Mock 离线」，可一键切换到真实 LLM（已实现双模式）',
-     t:'左下角「LLM 模型」可在 🎭 Mock（离线预设）与 🌐 真实 LLM 间切换。真实模式走 OpenAI /v1/chat/completions 兼容协议，可对接 Ollama 本地、本地 Mock 服务器、Groq、硅基流动、OpenRouter、OpenAI 及自定义端点；云端服务经 demo/proxy.py 同源代理转发（解 CORS + 注入 Key）。真实调用失败会自动降级到 Mock，不断链路。',
-     fix:'说明：当前 demo 为纯前端，真实模式需浏览器可访问对应端点；生产部署请走同源代理，勿在前端硬编码 API Key。'},
-    {b:'② 自动修复是「模式匹配」级别，缺乏真实验证闭环',
-     t:'TestAgent 失败→修复链路依赖预设规则，遇到陌生错误会陷入无效重试。',
-     fix:'改进：引入「测试驱动 Agent」——先写测试再写代码，修复后必须独立测试套件通过，否则不进入下一阶段。'},
-    {b:'③ Debate 是「角色扮演」，缺乏独立性与对抗性',
-     t:'4 个 Review 视角共用同一模型/同一上下文，容易「群体思维」，分歧可能流于形式。',
-     fix:'改进：视角间用不同模型/温度、引入外部知识校验、设置 Devil\'s Advocate 强制反对。'},
-    {b:'④ 缺乏评测体系（Evaluation）= 无法量化「答得好不好」',
-     t:'现在只能定性说「完成」，没有准确率、幻觉率、偏离度等指标，迭代时无从判断退步还是进步。',
-     fix:'改进：建黄金集（输入+标准答案）+ LLM-as-a-Judge + 回归看板，每次改 prompt/模型都跑评测。'},
-    {b:'⑤ 没有「不确定性表达」机制，AI 倾向强行作答',
-     t:'当证据不足时，系统仍会产出确定性答案（漏答的反面是乱说），缺少「我不确定，需要你补充 X」的能力。',
-     fix:'改进：置信度校准 + 拒答阈值 + 澄清问题生成，把「不知道」作为合法输出。'},
-    {b:'⑥ 链路追踪：已从内存存储升级为可导出 OTel（V2.5.6 已实现，待接持久化）',
-     t:'TenantTraceStore 支持分页/排序/聚合统计（trace_count、duration_ms 的 min/avg/max/total、error_rate、token_sum），并可 export(fmt="otel_jsonl"|"otel_dict") 导出标准 OTel 格式，直接送 Jaeger/Tempo/Phoenix；一条 Trace 天然归属一个 tenant，跨租户查询返回 None（防横向越权）。【当前缺口】导出后的 Collector/Persistence 层与基于 SLO 的告警尚未接入。',
-     fix:'改进（进行中）：接 OTel Collector → Jaeger/Tempo 持久化，叠加基于 SLO 的告警（错误率、P99 延迟）。'},
-    {b:'⑦ 安全护栏是「规则层」，缺沙箱与权限隔离',
-     t:'代码执行/Agent 工具调用若开放，可能被 Prompt Injection 利用执行危险操作。当前 API Key 已通过 demo/proxy.py 同源代理注入（浏览器无 Key 暴露），但代码执行沙箱仍缺。',
-     fix:'改进：代码运行在隔离沙箱（Docker/VM）、工具调用做能力最小化 + 审批、输入输出双向过滤。'},
-    {b:'⑧ 多租户隔离：核心链路已收敛（V2.5.5 复审，豁免清单已清零）',
-     t:'TenantContext 通过 contextvars.ContextVar 解决 asyncio 串号；配置/上下文/数据/配额/认证 5 层隔离已在 _verify_tenant.py 15/15 验证；EXEMPTIONS.md 的 A1 已复审为「已收敛/建议关闭」，活跃豁免 = 0。【当前缺口】跨进程/跨请求的记忆隔离、资源竞争仍需并发压测确认；配额字段注册需走 strict 模式（V2.5.6 已支持）。',
-     fix:'改进（进行中）：租户级 Memory 命名空间 + 并发压测 + 资源配额（Token/时长/并发数）限制 + register(strict=True) 防配置越界。'},
+    {b:'① 本页面是前端可视化演示，不是可执行的生产服务',
+     t:'页面展示的是工程化设计形态与交互流程，不包含真实的沙箱、持久化存储、评测执行器与告警通道。其价值在于「设计对齐」，不应用于「能力证明」。',
+     fix:'落地：按本页架构补齐后端服务（FastAPI 编排层 + OTel Collector + 沙箱运行时 + 评测集），前端仅作为控制台。'},
+    {b:'② 默认真实 LLM，但浏览器直连云端 API 存在 CORS 与 Key 暴露风险',
+     t:'已默认选中「同源代理」且提示前端零 Key 暴露，但实际代理服务需自行部署。未部署时真实模式无法连通云端。',
+     fix:'落地：部署同源代理（如 demo/proxy.py），所有云端调用经后端转发，浏览器不持有任何长期凭证。'},
+    {b:'③ 自动修复的「验证闭环」仍是演示逻辑，未接真实测试执行器',
+     t:'评测表格与结果是预设的展示数据，并非真实运行所得。真实场景下需集成 pytest / vitest 等执行器并解析结果。',
+     fix:'落地：接入独立测试执行器 + 覆盖率采集（coverage.py / v8），门禁读取真实指标。'},
+    {b:'④ LLM-as-a-Judge 评分存在 Judge 偏差与自指风险',
+     t:'用模型评模型可能系统性高估同家族模型表现，且 Judge 本身也会幻觉。黄金集需保留人工标注子集作为校准锚点。',
+     fix:'落地：Judge 与生成模型跨家族 + 人工标注校准集（≥ 100 例）+ 周期性一致性校验。'},
+    {b:'⑤ 多视角 Debate 的「独立性」依赖模型供给，单一模型时退化为角色扮演',
+     t:'若只接入一个模型供应商，多视角审查实为同一模型不同 system prompt，分歧可能流于形式。',
+     fix:'落地：视角分配强制跨供应商（如安全视角用 Claude、性能视角用 Gemini），无第二供应商时明确降级为单视角并标注置信度降低。'},
+    {b:'⑥ 链路追踪持久化与 SLO 告警的接收端需自行搭建',
+     t:'页面实现了 Trace 数据结构与 SLO 展示，但 Collector / 存储（Jaeger、Tempo、ClickHouse）/ 告警通道（PagerDuty、企微）需独立部署。',
+     fix:'落地：OTel Collector → Tempo/Jaeger 持久化，叠加 Prometheus 告警规则与 webhook 通知。'},
+    {b:'⑦ 沙箱隔离的完整度取决于运行时选型，容器不等于沙箱',
+     t:'Docker 默认配置共享内核，并非强隔离；面对恶意代码需 gVisor（runsc）或 Kata Containers。',
+     fix:'落地：高风险场景用 gVisor 运行时 + seccomp 严格白名单 + 网络全断 + 只读根fs + tmpfs 限额。'},
+    {b:'⑧ 多租户隔离需并发压测与记忆命名空间验证',
+     t:'contextvars 解决了协程内串号，但跨进程 / 跨请求的记忆隔离与资源竞争仍需压测确认。',
+     fix:'落地：租户级 Memory 命名空间 + 并发压测（≥ 1000 并发）+ 资源配额（Token / 时长 / 并发数）+ 横向越权渗透测试。'},
   ];
-  const box=document.getElementById('limit');
-  box.innerHTML=items.map((it,i)=>`<div class="limit-item"><b>${it.b}</b>${it.t}<div class="fix">💡 ${it.fix}</div></div>`).join('');
+  document.getElementById('limit').innerHTML=items.map(it=>`<div class="limit-item"><b>${it.b}</b>${it.t}<div class="fix">💡 ${it.fix}</div></div>`).join('');
 }
 
-// ============ 会话管理（问题①：会话点击/输入无效 → 数据驱动 + 新增按钮）============
-// 每个会话独立保存：输入框内容、流水线消息、思考链、各面板渲染结果
+// ============ 会话管理 ============
 let sessions=[];
 let currentSessionId=null;
-
 function defaultReq(){return document.getElementById('reqInput').value.trim()||'做一个天气查询 App，输入城市名返回实时天气和未来 3 天预报';}
-
 function createSession(name){
   const id='s-'+(Math.random().toString(36).slice(2,8));
-  const s={
-    id, name:name||`新会话 #${sessions.length+1}`,
-    req:defaultReq(),
-    messages:[], thinking:null, waterfall:null, traces:[], logText:'',
-    createdAt:Date.now(),
-    nameManuallySet:false,   // ★ 用户手动重命名后置 true，不再被概要覆盖
-  };
-  sessions.push(s);
-  return s;
+  const s={id,name:name||`新会话 #${sessions.length+1}`,req:defaultReq(),messages:[],thinking:null,waterfall:null,traces:[],logText:'',createdAt:Date.now(),nameManuallySet:false};
+  sessions.push(s); return s;
 }
-
-// 把当前 UI 状态快照进当前会话（运行前/运行中持续保存）
 function snapshotToCurrent(){
-  const cur=getCurrentSession();
-  if(!cur) return;
+  const cur=getCurrentSession(); if(!cur) return;
   cur.req=document.getElementById('reqInput').value;
   cur.logText=document.getElementById('log').innerHTML;
 }
-
-// 把会话状态还原到 UI
 function restoreSession(s){
   document.getElementById('reqInput').value=s.req||'';
   agentsEl.innerHTML='';
@@ -681,9 +787,7 @@ function restoreSession(s){
   document.getElementById('log').innerHTML=s.logText||'';
   if(s.waterfall) drawFlow(6);
 }
-
 function getCurrentSession(){return sessions.find(s=>s.id===currentSessionId)||null;}
-
 function renderSessions(){
   const box=document.getElementById('sessionList');
   box.innerHTML='';
@@ -695,69 +799,50 @@ function renderSessions(){
       <span class="rename" title="重命名">✎</span>
       <span style="flex:1;cursor:pointer" class="s-name">${escapeHtml(s.name)}</span>
       <span class="dot ${isActive?'':'idle'}"></span>`;
-    // 点击切换会话
     el.querySelector('.s-name').onclick=()=>switchSession(s.id);
     el.querySelector('.rename').onclick=e=>{e.stopPropagation();renameSession(s);};
     box.appendChild(el);
   });
 }
-
 function switchSession(id){
-  snapshotToCurrent();       // 切走前保存当前
+  snapshotToCurrent();
   currentSessionId=id;
   const s=getCurrentSession();
   if(s) restoreSession(s);
   renderSessions();
   log(`[session] 切换到 ${s.name}`,'info');
 }
-
 function renameSession(s){
   const name=prompt('重命名会话：',s.name);
   if(name!==null && name.trim()){s.name=name.trim();s.nameManuallySet=true;renderSessions();}
 }
-
-// ★ 新增：根据需求首句生成会话标题概要
-// 规则：取第一行 → 去「做一个/做一个」前缀 → 截取到第一个逗号/句号 → 上限 18 字符 → 去末尾标点
 function generateTitle(req){
-  if(!req) return '新会话';                       // 兜底：空需求返回默认名
-  let t=String(req).split('\n')[0].trim();      // 只取第一行
-  // 去常见前缀（含「帮我做一个」，避免残留「一个」）
+  if(!req) return '新会话';
+  let t=String(req).split('\n')[0].trim();
   t=t.replace(/^(帮我做一个|帮我做|做一个|做一个|做一个|做一个|做一个|做一个)\s*/i,'');
-  t=t.replace(/^(一个|一款|一套|一种)\s*/i,'');     // 再吃掉前缀后的量词，如「一个 Todo」
-  // 在第一个断句标点处截断
+  t=t.replace(/^(一个|一款|一套|一种)\s*/i,'');
   const cut=t.search(/[，。,.\n\r；;：:]/);
   if(cut>0 && cut<=24) t=t.slice(0,cut);
-  t=t.replace(/[，。,.\n\r；;：:\s]+$/g,'');      // 去末尾标点/空白
+  t=t.replace(/[，。,.\n\r；;：:\s]+$/g,'');
   if(t.length>18) t=t.slice(0,18);
-  return t||'新会话';                              // 极端情况（全被去掉）兜底
+  return t||'新会话';
 }
+function isDefaultName(name){return /^新会话\s*#?\d*$/.test(name||'');}
+function escapeHtml(str){return String(str).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 
-// 是否仍为「自动生成的默认名」：只有默认名才会在首次运行时被概要覆盖
-function isDefaultName(name){
-  return /^新会话\s*#?\d*$/.test(name||'');
-}
-
-function escapeHtml(str){
-  return String(str).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-}
-
-// 启动：初始化 2 个默认会话（保留原「演示会话 #1/#2」语义）
 (function initSessions(){
   const s1=createSession('演示会话 #1');
   const s2=createSession('演示会话 #2');
-  // #1 预填天气需求，#2 预填空（演示"输入无效"修复前的行为对比）
   s1.req='做一个天气查询 App，输入城市名返回实时天气和未来 3 天预报';
   s2.req='做一个 Markdown 笔记应用，支持实时预览、标签分类、全文搜索';
   currentSessionId=s1.id;
   renderSessions();
 })();
 
-// 新建会话按钮
 document.getElementById('newSessionBtn').onclick=()=>{
   snapshotToCurrent();
   const s=createSession();
   currentSessionId=s.id;
-  // 清空主区，准备新对话
   document.getElementById('reqInput').value='';
   agentsEl.innerHTML='';
   document.getElementById('thinking').innerHTML='';
@@ -770,154 +855,218 @@ document.getElementById('newSessionBtn').onclick=()=>{
 // ============ 运行流水线 ============
 const agentsEl=document.getElementById('agents');
 const stagesEl=document.getElementById('pipeline');
+const gateBanner=document.getElementById('gateBanner');
+let gateResolved=null;
+
+function renderPhaseBar(activeIdx){
+  document.getElementById('phaseBar').innerHTML=STAGES.map((s,i)=>
+    `<span class="phase-chip ${i===activeIdx?'on':i<activeIdx?'done':''}">${i<activeIdx?'✓ ':''}${s}</span>`).join('');
+}
 
 async function runPipeline(){
   const req=document.getElementById('reqInput').value.trim();
   if(!req){alert('请输入需求');return;}
-  const cur=getCurrentSession(); if(cur){cur.req=req;}      // ★ 归属当前会话
+  const cur=getCurrentSession(); if(cur){cur.req=req;}
   const btn=document.getElementById('runBtn');
   btn.disabled=true;btn.textContent='⏳ 运行中…';
-  if(!getCurrentSession() || true){agentsEl.innerHTML='';logEl.innerHTML='';}
-  renderThinking(req);renderGuard();renderLimit();
+  gateBanner.classList.remove('show');
+  gateResolved=null;
+  auditTrail=[];
+  runBudget={tokens:0,costUsd:0,durationMs:0};
+  document.getElementById('auditLog').innerHTML='';
+  agentsEl.innerHTML='';logEl.innerHTML='';
+  renderPhaseBar(-1);
+  renderThinking(req);renderGuard();renderLimit();renderSlo();
   log(`[pipeline] 新任务: ${req}`,'info');
   log(`[engine] ${ENGINE}`,'info');
-  log(`[guard] 触发可靠性护栏：Schema 校验 / 注入检测 / 预算检查`,'info');
+  log(`[guard] 预算检查：maxTokens=${SESSION_BUDGET.maxTokens} maxCost=$${SESSION_BUDGET.maxCostUsd} maxDuration=${SESSION_BUDGET.maxDurationMs}ms`,'info');
+  appendAudit({ts:Date.now(),actor:'orchestrator',action:'pipeline.start',detail:req,decision:'allow'});
 
   const stageEls=[...stagesEl.querySelectorAll('.stage')];
-  stageEls.forEach(s=>s.classList.remove('running','done'));
-
+  stageEls.forEach(s=>s.classList.remove('running','done','paused','failed'));
   const agents=AGENTS[ENGINE];
   const client=LLM_CLIENT || buildClient();
+  const useLLM=LLM_MODE==='real';
+  const tStart=Date.now();
 
-  // 每个阶段对应的「职责描述」，作为 system prompt 喂给 LLM
+  if(useLLM) log(`[llm] 真实模式：${client.provider}/${client.model}，每阶段调用真实 LLM`,'warn');
+  else       log(`[llm] Mock 兜底模式（如需真实 LLM 请先配置并测试连接）`,'info');
+
   const ROLES=[
-    '你是 RequirementAgent（需求理解）。把用户需求拆解为可验收的子任务，识别外部依赖。一句话回复。',
-    '你是 ArchitectAgent（方案规划）。设计技术架构（前端/API/数据层），定义数据模型与接口契约。一句话回复。',
-    '你是 CoderAgent（代码编写，3 个并行）。说明并行开发进展与接口契约对齐情况。一句话回复。',
-    '你是 TestAgent（自动测试）。报告测试用例数、通过率与修复情况。一句话回复。',
-    '你是 ReviewAgent（审查评审，多视角 Debate）。报告审查发现的问题与仲裁结果。一句话回复。',
-    '你是 DevOpsAgent（部署发布）。报告构建、健康检查、链路追踪接入情况。一句话回复。',
+    '你是 RequirementAgent（需求理解）。把用户需求拆为可验收原子任务，证据不足时生成澄清问题而非臆测。一句话回复。',
+    '你是 ArchitectAgent（方案规划）。评估候选方案并产出 ADR，明确威胁模型与接口契约。一句话回复。',
+    '你是 CoderAgent（代码编写，3 个沙箱并行）。说明并行进展、契约对齐与产物。一句话回复。',
+    '你是 IndependentTestAgent（独立验证）。报告由独立 Judge 生成的测试套件结果、覆盖率与修复情况。一句话回复。',
+    '你是 ReviewAgent（审查评审，多视角独立模型 + Devil\'s Advocate）。报告发现的问题、分歧仲裁与门禁状态。一句话回复。',
+    '你是 CanaryDeployAgent（灰度发布）。报告构建、签名、灰度比例与 SLO 达标情况，越界则回滚。一句话回复。',
   ];
-
-  // Mock 模式用预设文案（保持原体验），Real 模式逐条调 LLM
-  const useLLM = LLM_MODE==='real';
-  if(useLLM) log(`[llm] 真实模式：${client.provider}/${client.model}，每个 Agent 将调用真实 LLM`,'warn');
-  else       log(`[llm] Mock 模式：使用离线预设脚本（如需真实 LLM，请在左下角切换到「🌐 真实 LLM」）`,'info');
-
-  const messages=[]; // 动态填充
+  const messages=[];
 
   for(let i=0;i<6;i++){
+    // 预算预检
+    if(runBudget.costUsd>=SESSION_BUDGET.maxCostUsd){
+      log(`[budget] 成本预算 $${SESSION_BUDGET.maxCostUsd} 已耗尽，熔断回滚`,'err');
+      stageEls[i].classList.add('failed');
+      appendAudit({ts:Date.now(),actor:'budget-controller',action:'budget.exceeded',detail:`costUsd=${runBudget.costUsd}`,decision:'deny'});
+      break;
+    }
     stageEls[i].classList.add('running');
-    drawFlow(i+1);
-    expandThinking(i);
+    drawFlow(i+1); renderPhaseBar(i);
     log(`[${STAGES[i]}] ${agents[i]} 开始执行…`,'info');
+    appendAudit({ts:Date.now(),actor:agents[i],action:`stage.${STAGES[i].toLowerCase()}.start`,detail:'',decision:'allow'});
 
-    // ===== ② 核心：根据模式获取本阶段 Agent 回复 =====
     let text;
     if(useLLM){
-      try{
-        const t0=Date.now();
-        const resp=await client.chat([
-          {role:'system', content:`${ROLES[i]}\n当前 Agent：${agents[i]}`},
-          {role:'user', content:`用户需求：${req}\n请针对「${STAGES[i]}」阶段产出一句话工作汇报。`},
-        ], new AbortController().signal);
-        const ms=Date.now()-t0;
-        text=`${resp.content}${resp.real?'':''}`;
-        log(`[${STAGES[i]}] 🌐 ${agents[i]} ← ${client.provider}/${resp.model} (${ms}ms)`,'ok');
-      }catch(err){
-        // ★ 真实调用失败 → 优雅降级到 Mock，不断链路（对齐后端降级链设计）
-        text=mockReply(agents[i],req);
-        log(`[${STAGES[i]}] ⚠️ 真实 LLM 失败，降级 Mock：${err.message.slice(0,60)}`,'warn');
+      let lastErr=null;
+      for(let attempt=0;attempt<=SESSION_BUDGET.maxRetries;attempt++){
+        try{
+          const t0=Date.now();
+          const ctrl=new AbortController();
+          const timer=setTimeout(()=>ctrl.abort(),15000);
+          const resp=await client.chat([
+            {role:'system',content:`${ROLES[i]}\n当前 Agent：${agents[i]}`},
+            {role:'user',content:`用户需求：${req}\n请针对「${STAGES[i]}」阶段产出一句话工作汇报。`},
+          ],ctrl.signal);
+          clearTimeout(timer);
+          const ms=Date.now()-t0;
+          const usage=resp.usage||{prompt_tokens:0,completion_tokens:0,total_tokens:Math.round((resp.content||'').length/4)};
+          runBudget.tokens+=usage.total_tokens||0;
+          runBudget.costUsd+=(usage.total_tokens||0)*0.0000006;
+          runBudget.durationMs+=ms;
+          appendAudit({ts:Date.now(),actor:agents[i],action:'llm.call',detail:`${client.provider}/${resp.model} ${usage.total_tokens||0}t ${ms}ms`,decision:'allow'});
+          text=`${resp.content}`;
+          log(`[${STAGES[i]}] 🌐 ${agents[i]} ← ${client.provider}/${resp.model} (${(usage.total_tokens||0)}t, ${ms}ms)`,'ok');
+          break;
+        }catch(err){
+          lastErr=err;
+          const willRetry=attempt<SESSION_BUDGET.maxRetries;
+          log(`[${STAGES[i]}] ⚠️ 调用失败（第 ${attempt+1} 次）${willRetry?'，退避重试':'，降级到 Mock'}：${err.message.slice(0,50)}`,willRetry?'warn':'err');
+          appendAudit({ts:Date.now(),actor:agents[i],action:'llm.call',detail:`attempt ${attempt+1} failed: ${err.message.slice(0,40)}`,decision:willRetry?'allow':'deny'});
+          if(willRetry) await sleep(200*Math.pow(2,attempt)+Math.random()*100);
+          else { text=mockReply(agents[i],req); log(`[${STAGES[i]}] 降级 Mock，链路不断`,'warn'); }
+        }
       }
     }else{
-      // Mock 预设（与原逻辑一致）
       const mockTexts=[
-        `已解析需求「${req.slice(0,18)}…」，拆解为 6 个子任务，识别 3 个外部依赖（点击「AI 思考」查看推理链）`,
-        `完成架构设计：前端 SPA + RESTful API + SQLite。定义 4 个数据模型、7 个接口契约`,
-        `3 个 Coder 并行开发，通过 MsgHub 同步接口契约（契约校验告警已自动修复）`,
-        `运行 42 个测试用例：通过 40，失败 2（边界条件）。自动修复后 42/42 通过 ✅`,
-        `多视角审查 + Debate：发现 3 个问题，2 已自动修复，1 标记 TODO（人工门禁 ✋）`,
-        `构建 Docker 镜像，接入链路追踪，健康检查通过，P95 < 200ms 🎉`,
+        `已解析需求「${req.slice(0,18)}…」，拆为 6 个可验收子任务，识别 3 个外部依赖，生成 3 条澄清问题`,
+        `产出 ADR-001：前端 SPA + BFF 网关 + SQLite，4 数据模型 / 7 接口契约，威胁模型已记录`,
+        `3 个 Coder 在沙箱中并行开发，MsgHub 同步契约（1 次不一致已自动对齐）`,
+        `独立测试套件 42 例：40 通过 / 2 失败（特殊字符、API 超时）→ 补丁后 42/42，覆盖率 87%`,
+        `4 视角独立审查（不同模型）：发现 3 个问题，2 已修复，1 触发人工门禁`,
+        `灰度 5%→25%→100%，P95 < 200ms，错误率 0%，SLO 达标，链路已上报 TraceStore`,
       ];
       text=mockTexts[i];
-      await sleep(200+Math.random()*200); // 轻微节奏感
+      await sleep(200+Math.random()*200);
     }
-    messages.push({a:agents[i], t:text, cap:CAPABILITIES[i], real:useLLM});
+    messages.push({a:agents[i],t:text,cap:CAPABILITIES[i],real:useLLM});
     addAgentMsg(messages[i], useLLM);
-    // ★ 持久化到当前会话，切换会话后可还原
-    const cur=getCurrentSession();
-    if(cur){cur.messages=messages.slice(); cur.thinking=document.getElementById('thinking').innerHTML;}
+    if(cur){cur.messages=messages.slice();cur.thinking=document.getElementById('thinking').innerHTML;}
 
     stageEls[i].querySelectorAll('.cap span').forEach((s,j)=>setTimeout(()=>{s.style.background=j<=i?'var(--green)':'var(--border)';},j*110));
     stageEls[i].classList.remove('running');
+
+    // 阶段 5：人工审批门禁
+    if(i===4){
+      const approved=await waitForGate();
+      if(!approved){
+        log(`[gate] 人工门禁拒绝，流水线终止并回滚到 Checkpoint`,'err');
+        appendAudit({ts:Date.now(),actor:'human',action:'gate.review',detail:'发布被人工拒绝，执行回滚',decision:'deny'});
+        stageEls[i].classList.add('failed');
+        break;
+      }
+      log(`[gate] 人工门禁批准，进入灰度发布`,'ok');
+      appendAudit({ts:Date.now(),actor:'human',action:'gate.review',detail:'发布获人工批准',decision:'allow'});
+    }
     stageEls[i].classList.add('done');
-    log(`[${STAGES[i]}] ${agents[i]} 完成 · span=stage.${STAGES[i].toLowerCase()}`,'ok');
-    log(`[trace] trace_id=trace-${Date.now().toString(36)} span=${STAGES[i].toLowerCase()} latency=${Math.round(300+Math.random()*1500)}ms`,'info');
-    if(i===4) log(`[guard] 人工审批门禁触发：生产发布需确认`,'warn');
+    log(`[${STAGES[i]}] ${agents[i]} 完成`,'ok');
     drawFlow(i+1);
     await sleep(150);
   }
+
   renderWaterfall();
-  // ★ 首次运行后，用需求首句更新会话标题（概要）；手动重命名过则不覆盖
+  updateKpi();
+  renderPhaseBar(6);
+
+  // 会话标题更新
   (function updateSessionTitle(){
-    const cur=getCurrentSession();
-    if(!cur) return;
-    if(cur.nameManuallySet) return;                 // 用户已自定义 → 保留
-    if(!isDefaultName(cur.name)) return;            // 已是非默认名（如演示会话）→ 保留
+    const cur=getCurrentSession(); if(!cur) return;
+    if(cur.nameManuallySet) return;
+    if(!isDefaultName(cur.name)) return;
     const title=generateTitle(req);
     if(title && title!=='新会话'){cur.name=title; renderSessions();}
   })();
-  log(`[pipeline] 全部 6 阶段完成 · 总耗时约 ${(3+Math.random()*2).toFixed(1)}s`,'ok');
-  log(`[guard] 全链路审计已记录，可追溯至每个 LLM 调用（mode=${LLM_MODE}）`,'ok');
-  if(useLLM) log(`[llm] 本次流水线由真实 LLM 驱动（provider=${client.provider}）`,'ok');
+  log(`[pipeline] 流水线结束 · 耗时 ${((Date.now()-tStart)/1000).toFixed(1)}s · tokens=${runBudget.tokens} · cost=$${runBudget.costUsd.toFixed(4)}`,'ok');
   btn.disabled=false;btn.textContent='▶ 运行流水线';
 }
 
-function expandThinking(i){
-  const blocks=document.querySelectorAll('#thinking .thinking');
-  if(blocks[i]){blocks[i].classList.add('open');}
+// ============ 人工审批门禁 ============
+function waitForGate(){
+  return new Promise(resolve=>{
+    gateBanner.classList.add('show');
+    log(`[gate] 🔒 人工审批门禁触发：生产发布需人工确认，Agent 无法自行跳过`,'warn');
+    const onApprove=()=>{cleanup();resolve(true);};
+    const onReject=()=>{cleanup();resolve(false);};
+    function cleanup(){
+      gateBanner.classList.remove('show');
+      document.getElementById('gateApprove').onclick=null;
+      document.getElementById('gateReject').onclick=null;
+    }
+    document.getElementById('gateApprove').onclick=onApprove;
+    document.getElementById('gateReject').onclick=onReject;
+  });
+}
+
+// ============ KPI ============
+function updateKpi(){
+  const ok=document.querySelectorAll('.stage.done').length;
+  const total=document.querySelectorAll('.stage').length;
+  const successRate=Math.round(ok/total*100);
+  document.getElementById('kpiSuccess').textContent=successRate+'%';
+  document.getElementById('kpiSuccessTrend').textContent=`${ok}/${total} 阶段通过`;
+  document.getElementById('kpiSuccessTrend').className='k-trend '+(successRate>=100?'up':'down');
+  document.getElementById('kpiP95').textContent=runBudget.durationMs?(runBudget.durationMs*0.62).toFixed(0)+'ms':'—';
+  document.getElementById('kpiP95Trend').textContent='端到端 P95 估算';
+  document.getElementById('kpiCost').textContent=runBudget.costUsd?'$'+runBudget.costUsd.toFixed(4):'—';
+  document.getElementById('kpiCostTrend').textContent=runBudget.costUsd>SESSION_BUDGET.maxCostUsd*0.8?'接近预算':'预算健康';
+  document.getElementById('kpiCostTrend').className='k-trend '+(runBudget.costUsd>SESSION_BUDGET.maxCostUsd*0.8?'down':'up');
+  document.getElementById('kpiTokens').textContent=runBudget.tokens||'—';
+  document.getElementById('kpiTokensTrend').textContent=runBudget.tokens?`${(runBudget.tokens/1000).toFixed(1)}k tokens`:'-';
 }
 
 function addAgentMsg(m, isReal){
   const el=document.createElement('div');
   el.className='agent-msg';
-  const llmTag = isReal===true
+  const llmTag=isReal===true
     ? `<span class="tag llm-real">🌐 真实 LLM</span>`
-    : `<span class="tag llm-mock">🎭 Mock</span>`;
+    : `<span class="tag llm-mock">🎭 Mock 兜底</span>`;
   el.innerHTML=`<div class="avatar">${AVATAR[m.a]||'🤖'}</div><div class="body">${m.t}<div class="tag">🔧 ${m.cap}</div>${llmTag}</div>`;
   agentsEl.appendChild(el);
   agentsEl.scrollTop=agentsEl.scrollHeight;
 }
-
 function sleep(ms){return new Promise(r=>setTimeout(r,ms));}
 
-// ============ ② 模型选择器：模式切换 ============
+// ============ 模型选择器 ============
 const realCfg=document.getElementById('realCfg');
 const modelStatus=document.getElementById('modelStatus');
 const testBtn=document.getElementById('testBtn');
 function setMode(mode){
   LLM_MODE=mode;
   LLM_CLIENT=buildClient();
-  document.querySelectorAll('.model-mode button').forEach(b=>{
-    b.classList.toggle('active', b.dataset.mode===mode);
-  });
+  document.querySelectorAll('.model-mode button').forEach(b=>{b.classList.toggle('active',b.dataset.mode===mode);});
   realCfg.style.display=mode==='real'?'block':'none';
   renderModelStatus();
-  log(`[llm] 模式=${mode} client=${LLM_CLIENT.provider}`, mode==='real'?'warn':'info');
+  log(`[llm] 模式=${mode}`,mode==='real'?'warn':'info');
 }
 function renderModelStatus(){
   const dot=modelStatus.querySelector('.ms-dot');
   const txt=modelStatus.querySelector('.ms-text');
-  dot.className='ms-dot '+(LLM_MODE==='mock'?'mock':LLM_CLIENT?.provider||'idle');
+  dot.className='ms-dot '+(LLM_MODE==='mock'?'mock':(LLM_CLIENT?.provider||'idle'));
   txt.textContent=LLM_MODE==='mock'
-    ? '当前：Mock 离线模式（无需网络）'
+    ? '当前：Mock 兜底模式（离线）'
     : `当前：真实 LLM · ${PROVIDERS[CURRENT_PROVIDER].label} · ${LLM_CLIENT.model}`;
 }
-document.querySelectorAll('.model-mode button').forEach(b=>{
-  b.onclick=()=>setMode(b.dataset.mode);
-});
+document.querySelectorAll('.model-mode button').forEach(b=>{b.onclick=()=>setMode(b.dataset.mode);});
 
-// ============ 供应商切换 → 自动填入推荐模型/端点 ============
 function applyProvider(p){
   CURRENT_PROVIDER=p;
   const cfg=PROVIDERS[p];
@@ -925,16 +1074,12 @@ function applyProvider(p){
   document.getElementById('baseInput').value=cfg.base||'';
   document.getElementById('keyInput').value=cfg.key||'';
   document.getElementById('providerTip').textContent=cfg.tip;
-  // 模型输入框的提示随供应商变
   const hint=document.getElementById('modelHint');
-  hint.textContent=p==='ollama'?'本地需先 ollama pull'
-    : p==='mock-server'?'无需 Key，验证真实 HTTP 路径'
-    : '可在上方自由更换模型';
-  if(LLM_MODE==='real'){ LLM_CLIENT=buildClient(); renderModelStatus(); }
+  hint.textContent=p==='ollama'?'本地需先 ollama pull':p==='mock-server'?'无需 Key，验证真实 HTTP 路径':'可在上方自由更换模型';
+  if(LLM_MODE==='real'){LLM_CLIENT=buildClient();renderModelStatus();}
 }
 document.getElementById('providerSel').onchange=e=>applyProvider(e.target.value);
 
-// ============ 测试连接 ============
 testBtn.onclick=async()=>{
   const client=buildClient();
   testBtn.disabled=true; const old=testBtn.textContent;
@@ -946,35 +1091,30 @@ testBtn.onclick=async()=>{
     modelStatus.querySelector('.ms-dot').className='ms-dot real';
     testBtn.textContent='✅ 连接成功';
     log(`[llm] ✅ 响应: ${(r.content||'').slice(0,80)}`,'ok');
-    log(`[llm]   provider=${r.provider} model=${r.model} real=${r.real}`,'info');
     LLM_CLIENT=client; renderModelStatus();
   }catch(err){
     modelStatus.querySelector('.ms-dot').className='ms-dot err';
     testBtn.textContent='❌ 连接失败';
     log(`[llm] ❌ ${err.message}`,'err');
-    log(`[llm] 提示：本地服务需先启动（Ollama: ollama serve / Mock: python examples/mock_llm_server.py）`,'warn');
+    log(`[llm] 提示：本地服务需先启动（Ollama: ollama serve / Mock: mock_llm_server.py）`,'warn');
   }finally{
-    setTimeout(()=>{ testBtn.disabled=false; if(testBtn.textContent.includes('测试中')) testBtn.textContent=old; },1500);
+    setTimeout(()=>{testBtn.disabled=false;if(testBtn.textContent.includes('测试中'))testBtn.textContent=old;},1500);
   }
 };
-// 端点/模型/Key 输入变化 → 实时更新客户端
 ['modelInput','baseInput','keyInput'].forEach(id=>{
-  document.getElementById(id).addEventListener('input',()=>{
-    if(LLM_MODE==='real'){ LLM_CLIENT=buildClient(); renderModelStatus(); }
-  });
+  document.getElementById(id).addEventListener('input',()=>{if(LLM_MODE==='real'){LLM_CLIENT=buildClient();renderModelStatus();}});
 });
 
-// 初始化：默认 Mock + Ollama 预设
-applyProvider('ollama');
-setMode('mock');
-
-// ============ 启动 ============
+// 初始化：默认真实模式 + 同源代理
+applyProvider('via-proxy');
+setMode('real');
 drawFlow(0);
 renderThinking('做一个天气查询 App');
 renderGuard();
 renderLimit();
-log('[system] 在线演示已就绪','ok');
-log('[system] 6 个 Tab：协作 / AI 思考 / 架构 / 链路 / 护栏 / 不足','info');
+renderSlo();
+log('[system] 生产级 Agent 工程化演示已就绪（真实 LLM 优先，Mock 兜底）','ok');
+log('[system] 8 个 Tab：协作 / 推理 / 评测 / 架构 / 追踪 / 护栏 / 审计 / 风险','info');
 document.getElementById('runBtn').onclick=runPipeline;
 document.getElementById('reqInput').addEventListener('keydown',e=>{if(e.key==='Enter')runPipeline();});
 </script>
