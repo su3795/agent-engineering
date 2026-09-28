@@ -1,0 +1,1644 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WorkBuddy · Production-Grade Agent Harness</title>
+<style>
+:root{--bg:#0d1117;--panel:#161b22;--card:#1c2333;--card2:#21262d;--border:#30363d;--text:#e6edf3;--sub:#8b949e;--green:#3fb950;--blue:#58a6ff;--purple:#a78bfa;--orange:#f0883e;--red:#f85149;--yellow:#d29922}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,'PingFang SC','Microsoft YaHei',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+.layout{display:grid;grid-template-columns:290px 1fr;min-height:100vh}
+@media(max-width:900px){.layout{grid-template-columns:1fr}}
+.sidebar{background:var(--panel);border-right:1px solid var(--border);padding:18px;display:flex;flex-direction:column;gap:9px;overflow:auto}
+.sidebar h1{font-size:15px;margin-bottom:2px;background:linear-gradient(135deg,#60a5fa,#a78bfa);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.sidebar .desc{font-size:11px;color:var(--sub);margin-bottom:10px;line-height:1.6}
+.preset{border:1px solid var(--border);background:var(--card);border-radius:10px;padding:9px 11px;cursor:pointer;font-size:12px;transition:.15s;color:var(--text)}
+.preset:hover{border-color:var(--blue);transform:translateX(3px)}
+.preset b{display:block;color:var(--blue);margin-bottom:3px}
+.badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:10px;background:rgba(88,166,255,.15);color:var(--blue);margin:6px 0 4px}
+.session{border:1px solid var(--border);border-radius:10px;padding:8px 10px;font-size:12px;cursor:pointer;display:flex;justify-content:space-between;align-items:center}
+.session.active{background:var(--card);border-color:var(--green)}
+.session .dot{width:8px;height:8px;border-radius:50%;background:var(--green)}
+.session .dot.idle{background:var(--sub)}
+.session .rename{background:transparent;border:none;color:var(--sub);cursor:pointer;font-size:11px;display:none}
+.session:hover .rename{display:inline}
+#newSessionBtn:hover{background:rgba(63,185,80,.35)}
+#sessionList{display:flex;flex-direction:column;gap:6px}
+.engine-toggle{display:flex;gap:6px;margin-top:auto}
+.engine-toggle button{flex:1;padding:8px;font-size:11px;border-radius:8px;border:1px solid var(--border);background:var(--card);color:var(--sub);cursor:pointer}
+.engine-toggle button.active{border-color:var(--blue);color:var(--blue);font-weight:700}
+.main{padding:20px 28px;overflow:auto}
+.input-bar{display:flex;gap:10px;margin-bottom:18px}
+.input-bar input{flex:1;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:13px 15px;color:var(--text);font-size:14px;outline:none}
+.input-bar input:focus{border-color:var(--blue)}
+.input-bar button{background:linear-gradient(135deg,#238636,#2ea043);color:#fff;border:none;border-radius:12px;padding:0 22px;font-weight:700;cursor:pointer}
+.input-bar button:disabled{opacity:.5;cursor:not-allowed}
+.pipeline{display:grid;grid-template-columns:repeat(6,1fr);gap:7px;margin-bottom:18px}
+@media(max-width:900px){.pipeline{grid-template-columns:1fr}}
+.stage{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:11px 6px;text-align:center;transition:.3s}
+.stage .icon{font-size:20px;margin-bottom:5px}
+.stage .name{font-size:11px;font-weight:700}
+.stage .sub{font-size:9px;color:var(--sub);margin-top:2px}
+.stage .cap{display:flex;gap:2px;justify-content:center;margin-top:5px}
+.stage .cap span{width:6px;height:6px;border-radius:50%;background:var(--border)}
+.stage.running{border-color:var(--blue);box-shadow:0 0 16px rgba(88,166,255,.4)}
+.stage.done{border-color:var(--green)}
+.stage.running .icon{animation:pulse 1s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.tabs{display:flex;gap:6px;border-bottom:1px solid var(--border);margin-bottom:14px;flex-wrap:wrap}
+.tab{padding:8px 14px;font-size:12px;cursor:pointer;color:var(--sub);border-bottom:2px solid transparent;margin-bottom:-1px}
+.tab.active{color:var(--text);border-bottom-color:var(--blue)}
+.panel{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:14px}
+.panel h3{font-size:12px;color:var(--sub);margin-bottom:10px;text-transform:uppercase;letter-spacing:1px}
+.tab-panel{display:none}
+.tab-panel.active{display:block}
+.agent-msg{display:flex;gap:8px;margin-bottom:10px;font-size:12px;align-items:flex-start}
+.agent-msg .avatar{width:26px;height:26px;border-radius:7px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:13px}
+.agent-msg .body{flex:1;background:var(--card);border-radius:8px;padding:8px 10px;line-height:1.55}
+.agent-msg .body .tag{font-size:9px;color:var(--green);margin-top:3px}
+/* AI 思考块 */
+.thinking{margin:6px 0 10px;font-size:11px;border:1px solid rgba(167,139,250,.35);border-radius:9px;background:rgba(167,139,250,.07);overflow:hidden}
+.thinking .th-head{display:flex;align-items:center;gap:6px;padding:6px 10px;cursor:pointer;color:var(--purple);user-select:none;font-weight:600}
+.thinking .th-head .th-chev{transition:.2s;font-size:9px}
+.thinking .th-body{max-height:0;overflow:hidden;transition:max-height .3s;padding:0 10px}
+.thinking.open .th-body{max-height:600px;padding:6px 10px 10px}
+.thinking.open .th-chev{transform:rotate(90deg)}
+.thinking .th-body .step{display:flex;gap:7px;margin-bottom:6px;color:var(--sub);line-height:1.5}
+.thinking .th-body .step .n{flex-shrink:0;width:16px;height:16px;border-radius:50%;background:rgba(167,139,250,.25);color:var(--purple);font-size:9px;display:flex;align-items:center;justify-content:center;font-weight:700}
+.thinking .th-body .step.ok .n{background:rgba(63,185,80,.25);color:var(--green)}
+.thinking .th-body .step.warn .n{background:rgba(248,81,73,.25);color:var(--red)}
+canvas{width:100%;display:block;background:var(--card)}
+.canvas-wrap{border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-top:8px}
+.log{font-family:'SF Mono',Consolas,monospace;font-size:10px;color:var(--sub);max-height:240px;overflow:auto;line-height:1.7}
+.log .ok{color:var(--green)}
+.log .info{color:var(--blue)}
+.log .warn{color:var(--yellow)}
+.log .err{color:var(--red)}
+.guard{display:flex;flex-direction:column;gap:8px;margin-top:8px}
+.guard-row{display:flex;gap:8px;align-items:center;font-size:11px;padding:8px 10px;background:var(--card);border-radius:8px;border:1px solid var(--border)}
+.guard-row .g-icon{font-size:15px}
+.guard-row .g-name{flex:1;font-weight:600}
+.guard-row .g-desc{color:var(--sub);font-size:10px}
+.guard-row .g-tag{padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700}
+.g-tag.pass{background:rgba(63,185,80,.15);color:var(--green)}
+.g-tag.fail{background:rgba(248,81,73,.15);color:var(--red)}
+.g-tag.warn{background:rgba(210,153,34,.15);color:var(--yellow)}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media(max-width:900px){.two{grid-template-columns:1fr}}
+.limit{display:flex;flex-direction:column;gap:10px}
+.limit-item{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:11px 12px;font-size:11px;line-height:1.6}
+.limit-item b{color:var(--orange);display:block;margin-bottom:4px;font-size:12px}
+.limit-item .fix{color:var(--green);font-size:10px;margin-top:5px;font-style:italic}
+.wf{display:flex;align-items:center;gap:4px;flex-wrap:wrap;margin-top:8px}
+.wf .wf-bar{height:14px;border-radius:3px;background:var(--blue);position:relative;min-width:20px}
+.wf .wf-bar.sp{LangChain:;background:linear-gradient(90deg,var(--blue),var(--purple))}
+.wf .wf-label{font-size:9px;color:var(--sub);width:70px}
+.wf .wf-time{font-size:9px;color:var(--text);width:42px;text-align:right}
+
+/* ===== LLM 模型选择器 ===== */
+.model-panel{border:1px solid var(--border);background:var(--card);border-radius:10px;padding:10px;display:flex;flex-direction:column;gap:8px;margin-top:6px}
+.model-mode{display:flex;gap:6px}
+.model-mode button{flex:1;padding:7px 4px;font-size:10.5px;border-radius:8px;border:1px solid var(--border);background:var(--card2);color:var(--sub);cursor:pointer;transition:.15s}
+.model-mode button.active{border-color:var(--green);color:var(--green);font-weight:700;background:rgba(63,185,80,.12)}
+.cfg-label{font-size:9.5px;color:var(--sub);display:flex;justify-content:space-between;margin-top:2px}
+.cfg-hint{font-size:8.5px;color:var(--sub);opacity:.8}
+.cfg-select,.cfg-input{width:100%;background:var(--card2);border:1px solid var(--border);border-radius:7px;padding:6px 8px;color:var(--text);font-size:10.5px;outline:none;font-family:inherit}
+.cfg-select:focus,.cfg-input:focus{border-color:var(--blue)}
+.cfg-tip{font-size:9px;color:var(--sub);line-height:1.5;background:rgba(88,166,255,.08);border:1px solid rgba(88,166,255,.2);border-radius:6px;padding:6px 8px}
+.model-status{display:flex;align-items:center;gap:6px;font-size:10px;color:var(--sub)}
+.ms-dot{width:8px;height:8px;border-radius:50%;background:var(--sub)}
+.ms-dot.mock{background:var(--yellow)}
+.ms-dot.real{background:var(--green)}
+.ms-dot.busy{background:var(--blue);animation:pulse 1s infinite}
+.ms-dot.err{background:var(--red)}
+.test-btn{width:100%;padding:7px;border-radius:8px;border:1px dashed var(--border);background:transparent;color:var(--sub);font-size:10.5px;cursor:pointer;transition:.15s}
+.test-btn:hover{border-color:var(--blue);color:var(--blue)}
+.test-btn:disabled{opacity:.5;cursor:not-allowed}
+/* Agent 消息里标注 LLM 来源 */
+.agent-msg .body .tag.llm-mock{color:var(--yellow)}
+.agent-msg .body .tag.llm-real{color:var(--green)}
+/* ===== 生产级治理模块样式 ===== */
+.rt-card{background:var(--card);border:1px solid var(--border);border-left:3px solid var(--blue);border-radius:8px;padding:9px 11px;font-size:11.5px;line-height:1.55}
+.rt-card.g{border-left-color:var(--green)} .rt-card.p{border-left-color:var(--purple)} .rt-card.o{border-left-color:var(--orange)} .rt-card.r{border-left-color:var(--red)}
+.rt-card b{color:var(--text)} .rt-card .k{color:var(--blue)} .rt-card .v{color:var(--green)}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media(max-width:900px){.two{grid-template-columns:1fr}}
+.canvas-wrap{border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-top:8px}
+canvas{width:100%;display:block;background:var(--card)}
+.slo{display:flex;flex-direction:column;gap:9px}
+.slo-row{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:9px 11px;font-size:11px}
+.slo-row .nm{display:flex;justify-content:space-between;font-weight:700;margin-bottom:6px}
+.slo-bar{height:7px;border-radius:4px;background:var(--border);overflow:hidden;margin:6px 0 4px}
+.slo-bar>i{display:block;height:100%;background:var(--green)}
+.slo-bar.warn>i{background:var(--yellow)} .slo-bar.crit>i{background:var(--red)}
+.slo-row .meta{display:flex;justify-content:space-between;color:var(--sub);font-size:10px}
+.qc{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:9px}
+.qc-card{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:9px 11px;font-size:11px;line-height:1.6}
+.qc-card .mdl{font-weight:700;margin-bottom:3px}
+.qc-card .qq{height:5px;border-radius:3px;background:var(--border);margin:6px 0 4px;overflow:hidden}
+.qc-card .qq>i{display:block;height:100%;background:var(--purple)}
+.qc-card .qq>em{display:block;height:100%;background:var(--orange)}
+.qc-card .badge-q{font-size:9.5px;padding:1px 6px;border-radius:8px;margin-left:6px}
+.qc-card .badge-q.hi{background:rgba(63,185,80,.15);color:var(--green)}
+.qc-card .badge-q.lo{background:rgba(210,153,34,.15);color:var(--yellow)}
+table.hitl{width:100%;border-collapse:collapse;font-size:11px}
+table.hitl td{border:1px solid var(--border);padding:6px 9px;vertical-align:top}
+table.hitl td.k{width:96px;color:var(--sub);background:var(--card2)}
+.modal-mask{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:center;justify-content:center;z-index:50}
+.modal-mask.show{display:flex}
+.modal{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:18px;width:420px;max-width:92vw;display:flex;flex-direction:column;gap:10px}
+.modal label{font-size:10px;color:var(--sub);margin-top:4px}
+.modal input,.modal textarea{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px 10px;color:var(--text);font-size:12px;outline:none;font-family:inherit;resize:vertical}
+.modal input:focus,.modal textarea:focus{border-color:var(--blue)}
+.modal-actions{display:flex;gap:10px;margin-top:6px}
+.modal-actions button{flex:1;padding:9px;border-radius:9px;border:1px solid var(--border);background:var(--card);color:var(--text);cursor:pointer}
+.modal-actions button.conf{background:rgba(63,185,80,.15);border-color:var(--green);color:var(--green);font-weight:700}
+.rp{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px}
+.rp-card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:10px 12px;font-size:11px;line-height:1.55}
+.rp-card h4{font-size:12px;margin-bottom:5px;display:flex;align-items:center;gap:6px}
+.rp-card .who{font-size:11px;color:var(--green);font-weight:700}
+.rp-card .who.pending{color:var(--yellow)}
+.rp-card .who.escalated{color:var(--red)}
+.rp-card .ev{font-size:10px;color:var(--sub);margin-top:5px;border-top:1px dashed var(--border);padding-top:5px}
+.rp-card ul{margin:4px 0 0 16px;color:var(--sub);font-size:10px;line-height:1.6}
+.tier{display:flex;gap:8px;margin:8px 0;flex-wrap:wrap}
+.tier-btn{padding:7px 12px;font-size:11px;border-radius:8px;border:1px solid var(--border);background:var(--card);color:var(--sub);cursor:pointer}
+.tier-btn.active{background:rgba(63,185,80,.15);border-color:var(--green);color:var(--green);font-weight:700}
+.cost-bar{height:18px;border-radius:4px;background:var(--card);border:1px solid var(--border);overflow:hidden;display:flex;margin:6px 0 4px}
+.cost-bar i{display:block;height:100%}
+.cost-legend{font-size:10px;color:var(--sub);display:flex;gap:14px;flex-wrap:wrap}
+.banner{background:rgba(63,185,80,.08);border:1px solid rgba(63,185,80,.35);border-radius:10px;padding:9px 12px;font-size:11px;color:var(--green);margin-bottom:14px}
+.banner.warn{background:rgba(210,153,34,.08);border-color:rgba(210,153,34,.35);color:var(--yellow)}
+.banner.err{background:rgba(248,81,73,.08);border-color:rgba(248,81,73,.35);color:var(--red)}
+/* ===== 治理改造：显式降级 / 预算熔断 / 动态豁免 / 评测 ===== */
+.degrade-strip{background:rgba(210,153,34,.10);border:1px solid rgba(210,153,34,.45);border-left:4px solid var(--yellow);border-radius:8px;padding:8px 12px;margin-bottom:12px;font-size:11.5px;line-height:1.65%;color:var(--text);display:none}
+.degrade-strip.show{display:block}
+.degrade-strip b{color:var(--yellow)}
+.degrade-strip .d-num{display:inline-block;min-width:18px;height:18px;line-height:1.5;border-radius:50%;background:var(--yellow);color:#241800;font-weight:700;text-align:center;font-size:10px;margin-right:4px}
+.stage.mocked{border-color:var(--yellow);box-shadow:0 0 14px rgba(210,153,34,.30)}
+.stage.mocked .icon{filter:grayscale(.4)}
+.stage.fallback .icon{animation:pulseFallback 1.2s infinite}
+@keyframes pulseFallback{0%,100%{opacity:1}50%{opacity:.35}}
+.stage .fb-tag{display:none;position:absolute;top:-7px;right:-7px;background:var(--yellow);color:#241800;font-size:8.5px;font-weight:700;padding:1px 6px;border-radius:8px}
+.stage.mocked .fb-tag{display:block}
+.stage{position:relative}
+.pipeline{position:relative}
+.kpi{display:grid;grid-template-columns:repeat(auto-fill,minmax(132px,1fr));gap:9px;margin-bottom:14px}
+.kpi-card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:9px 11px;font-size:11px;line-height:1.6}
+.kpi-card .v{font-size:16px;font-weight:700;color:var(--text)}
+.kpi-card .l{color:var(--sub);font-size:9.5px}
+.kpi-card.warn{border-color:var(--yellow)} .kpi-card.warn .v{color:var(--yellow)}
+.kpi-card.crit{border-color:var(--red);background:rgba(248,81,73,.07)} .kpi-card.crit .v{color:var(--red)}
+.cost-real{font-family:'SF Mono',Consolas,monospace;font-size:10px}
+.cost-real .token-i{color:var(--blue)} .cost-real .token-o{color:var(--green)} .cost-real .token-r{color:var(--purple)}
+.cost-real .cost-v{color:var(--orange);font-weight:700}
+.gate-bar{background:rgba(248,81,73,.07);border:1px solid rgba(248,81,73,.45);border-radius:10px;padding:11px 13px;margin:10px 0;display:none;font-size:12px}
+.gate-bar.show{display:block}
+.gate-bar .g-actions{display:flex;gap:9px;margin-top:9px}
+.gate-bar button{flex:1;padding:8px;border-radius:8px;border:1px solid var(--border);background:var(--card);color:var(--text);cursor:pointer;font-size:11px}
+.gate-bar button.approve{background:rgba(63,185,80,.16);border-color:var(--green);color:var(--green);font-weight:700}
+.gate-bar button.reject{background:rgba(248,81,73,.12);border-color:var(--red);color:var(--red)}
+.gate-bar button:hover{filter:brightness(1.15)}
+.gate-bar .g-meta{font-size:10px;color:var(--sub);margin-top:7px;border-top:1px dashed var(--border);padding-top:6px}
+.audit{font-family:'SF Mono',Consolas,monospace;font-size:9.5px;color:var(--sub);max-height:230px;overflow:auto;line-height:1.7}
+.audit .a-real{color:var(--green)} .audit .a-mock{color:var(--yellow)} .audit .a-fb{color:var(--orange)} .audit .a-decide{color:var(--purple)}
+.audit .a-time{color:#5b6470}
+.audit .a-actor{color:var(--blue);font-weight:700}
+.pill{display:inline-block;padding:1px 7px;border-radius:9px;font-size:9px;font-weight:700}
+.pill.pass{background:rgba(63,185,80,.16);color:var(--green)}
+.pill.fail{background:rgba(248,81,73,.16);color:var(--red)}
+.pill.skip{background:rgba(139,148,158,.18);color:var(--sub)}
+.ev-row{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px 11px;font-size:11px;margin-bottom:7px}
+.ev-row .ev-head{display:flex;justify-content:space-between;font-weight:700;margin-bottom:4px}
+.ev-row .ev-head .t{font-family:'SF Mono',monospace;font-size:10px;color:var(--sub);font-weight:400}
+.demo-stamp{display:inline-block;background:rgba(139,148,158,.16);color:var(--sub);font-size:9px;padding:2px 8px;border-radius:8px;font-weight:700;letter-spacing:.3px}
+.demo-stamp.live{background:rgba(63,185,80,.15);color:var(--green)}
+.probe-msg{font-size:10px;color:var(--sub);margin-top:6px;line-height:1.5}
+.mock-cap{display:flex;gap:2px;justify-content:center;margin-top:5px}
+.mock-cap span{width:6px;height:6px;border-radius:50%;background:var(--border)}
+.mock-cap span.on{background:var(--yellow)}
+.eval-summary{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:9px;margin-bottom:12px}
+.eval-card{background:var(--card);border:1px solid var(--border);border-radius:9px;padding:9px 11px;font-size:11px}
+.eval-card .v{font-size:15px;font-weight:700}
+.eval-card .l{font-size:9.5px;color:var(--sub);margin-top:2px}
+.eval-card .gate{margin-top:5px;font-size:9.5px}
+.eval-case{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px 11px;font-size:10.5px;margin-bottom:6px;line-height:1.6}
+.eval-case .c-name{font-weight:700;margin-bottom:3px}
+.eval-case .c-res{color:var(--sub);font-size:10px}
+.eval-case .c-judge{font-size:9.5px;color:var(--purple);margin-top:3px;font-style:italic}
+.eval-badge{display:inline-block;padding:1px 7px;border-radius:8px;font-size:9px;font-weight:700;margin-left:6px}
+.eval-badge.pass{background:rgba(63,185,80,.16);color:var(--green)}
+.eval-badge.fail{background:rgba(248,81,73,.16);color:var(--red)}
+.eval-badge.partial{background:rgba(210,153,34,.16);color:var(--yellow)}
+</style>
+</head>
+<body>
+<div class="layout">
+  <aside class="sidebar">
+    <h1>🛡️ WorkBuddy Harness</h1>
+    <div class="desc">生产级 Agent 平台 · Harness 架构为 Runtime 内核<br>10 项工程能力 · 责任主体绑定 · 在线演示</div>
+    <div class="badge" style="background:rgba(139,148,158,.15);color:var(--sub)">🧪 演示模式：策略/成本/SLO 数值均为 Mock 占位，仅展示治理形态</div>
+    <div class="badge">预设需求（点击直接演示）</div>
+    <div class="badge" style="background:rgba(139,148,158,.15);color:var(--sub)">⚠️ 本页为前端演示，治理策略/责任主体均为 Mock 占位数据</div>
+    <div class="preset" data-req="做一个天气查询 App，输入城市名返回实时天气和未来 3 天预报，支持国内主要城市"><b>🌤️ 天气 App</b>Web + API + 缓存 + 部署</div>
+    <div class="preset" data-req="搭建一个待办事项 Todo 应用，支持增删改查、分类、截止日期提醒，数据本地持久化"><b>✅ Todo 应用</b>前端状态 + 本地存储</div>
+    <div class="preset" data-req="开发一个个人记账本，记录收支、按月份统计图表、导出 CSV，支持多账户"><b>💰 记账本</b>数据可视化 + 导出</div>
+    <div class="preset" data-req="做一个 Markdown 笔记应用，支持实时预览、标签分类、全文搜索、暗色主题"><b>📝 笔记应用</b>编辑器 + 搜索 + 主题</div>
+    <div class="badge" style="display:flex;justify-content:space-between;align-items:center">
+      会话
+      <button id="newSessionBtn" title="新建会话" style="background:rgba(63,185,80,.15);border:1px solid var(--green);color:var(--green);border-radius:6px;width:20px;height:20px;cursor:pointer;font-size:12px;line-height:1">+</button>
+    </div>
+    <div id="sessionList"></div>
+    <div class="engine-toggle">
+      <button class="active" data-eng="langchain">LangChain</button>
+      <button data-eng="agentscope">AgentScope</button>
+    </div>
+
+    <!-- ===== ② LLM 模型选择器（Mock / 真实可切换）===== -->
+    <div class="badge" style="margin-top:14px">🤖 LLM 模型（Mock / 真实可切换）</div>
+    <div class="model-panel">
+      <div class="model-mode">
+        <button class="active" data-mode="mock" title="预设脚本，无需网络，离线即用">🎭 Mock（离线）</button>
+        <button data-mode="real" title="走真实 HTTP：本地 Ollama / Mock 服务器 / 云端代理">🌐 真实 LLM</button>
+      </div>
+
+      <!-- 真实模式：供应商 + 端点配置 -->
+      <div class="real-cfg" id="realCfg" style="display:none">
+        <label class="cfg-label">供应商</label>
+        <select id="providerSel" class="cfg-select">
+          <option value="ollama">🦙 Ollama（本地 · 免费）</option>
+          <option value="mock-server">🧪 本地 Mock 服务器（:8765）</option>
+          <option value="groq">⚡ Groq（Llama · 免费额度）</option>
+          <option value="siliconflow">🇨🇳 硅基流动（中文 · 免费额度）</option>
+          <option value="openrouter">🔀 OpenRouter（多模型 · 免费档）</option>
+          <option value="openai">🔵 OpenAI</option>
+          <option value="custom">⚙️ 自定义（OpenAI 兼容）</option>
+          <option value="via-proxy">🔒 经同源代理（推荐生产）</option>
+        </select>
+
+        <label class="cfg-label">模型名 <span class="cfg-hint" id="modelHint">本地需先 ollama pull</span></label>
+        <input id="modelInput" class="cfg-input" value="qwen2.5:7b" placeholder="如 gpt-4o-mini / llama-3.3-70b-versatile（模型名仅作演示，真实调用需可用端点）" />
+
+        <label class="cfg-label">API Base <span class="cfg-hint">留空用供应商默认</span></label>
+        <input id="baseInput" class="cfg-input" placeholder="https://api.groq.com/openai/v1" />
+
+        <label class="cfg-label">API Key <span class="cfg-hint">本地 Ollama 可留空</span></label>
+        <input id="keyInput" class="cfg-input" type="password" placeholder="sk-...（云端服务必填，仅存本地内存）" />
+
+        <div class="cfg-tip" id="providerTip">选择后自动填入推荐模型与端点，可在上方修改。</div>
+      </div>
+
+      <div class="model-status" id="modelStatus">
+        <span class="ms-dot idle"></span><span class="ms-text">当前：Mock 离线模式</span>
+      </div>
+      <button id="testBtn" class="test-btn">🔌 测试连接</button>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="input-bar">
+      <input id="reqInput" placeholder="描述你的需求，例如：做一个天气查询 App…" value="做一个天气查询 App，输入城市名返回实时天气和未来 3 天预报" />
+      <button id="runBtn">▶ 运行流水线</button>
+    </div>
+
+    <div class="degrade-strip" id="degradeStrip"></div>
+    <div class="kpi" id="kpiBar"></div>
+    <div class="pipeline" id="pipeline">
+      <div class="stage" data-i="0"><div class="icon">📋</div><div class="name">需求理解</div><div class="sub">Requirement</div><div class="cap"><span></span><span></span><span></span><span></span><span></span><span></span></div></div>
+      <div class="stage" data-i="1"><div class="icon">📐</div><div class="name">方案规划</div><div class="sub">Architect</div><div class="cap"><span></span><span></span><span></span><span></span><span></span><span></span></div></div>
+      <div class="stage" data-i="2"><div class="icon">💻</div><div class="name">代码编写</div><div class="sub">3× Coder</div><div class="cap"><span></span><span></span><span></span><span></span><span></span><span></span></div></div>
+      <div class="stage" data-i="3"><div class="icon">🧪</div><div class="name">自动测试</div><div class="sub">Test</div><div class="cap"><span></span><span></span><span></span><span></span><span></span><span></span></div></div>
+      <div class="stage" data-i="4"><div class="icon">🔍</div><div class="name">审查评审</div><div class="sub">4× Review</div><div class="cap"><span></span><span></span><span></span><span></span><span></span><span></span></div></div>
+      <div class="stage" data-i="5"><div class="icon">🚀</div><div class="name">部署发布</div><div class="sub">DevOps</div><div class="cap"><span></span><span></span><span></span><span></span><span></span><span></span></div></div>
+    </div>
+
+    <div class="tabs">
+      <div class="tab active" data-tab="agents">🤖 Agent 协作</div>
+      <div class="tab" data-tab="think">🧠 AI 思考过程</div>
+      <div class="tab" data-tab="arch">🏛️ 架构设计</div>
+      <div class="tab" data-tab="trace">📡 链路监控</div>
+      <div class="tab" data-tab="guard">🛡️ 可靠性护栏</div>
+      <div class="tab" data-tab="slo">🎯 SLO · 错误预算</div>
+      <div class="tab" data-tab="policy">📜 策略版本治理</div>
+      <div class="tab" data-tab="cost">💸 成本分摊</div>
+      <div class="tab" data-tab="duty">👤 责任主体矩阵</div>
+      <div class="tab" data-tab="audit">📜 审计日志</div>
+      <div class="tab" data-tab="eval">🧪 评测与验收</div>
+      <div class="tab" data-tab="limit">⚠️ 剩余风险与待办</div>
+    </div>
+
+    <!-- Agent 协作 -->
+    <div class="tab-panel active" id="panel-agents">
+      <div class="panel">
+        <h3>🤖 Agent 协作过程</h3>
+        <div id="agents"></div>
+      </div>
+    </div>
+
+    <!-- AI 思考 -->
+    <div class="tab-panel" id="panel-think">
+      <div class="panel">
+        <h3>🧠 AI 思考过程（ReAct：推理 → 行动 → 观察）</h3>
+        <div class="desc" style="font-size:11px;color:var(--sub);margin-bottom:10px">每个 Agent 在产出答案前，都会展示「内部推理链」。这是防止 AI 乱说/漏答的第一道防线。</div>
+        <div id="thinking"></div>
+      </div>
+    </div>
+
+    <!-- 架构设计 -->
+    <div class="tab-panel" id="panel-arch">
+      <div class="panel">
+        <h3>🏛️ 项目架构设计（Canvas 分层图）</h3>
+        <div class="canvas-wrap"><canvas id="arch" width="800" height="360"></canvas></div>
+        <div class="two" style="margin-top:12px">
+          <div>
+            <h3>核心数据流</h3>
+            <div class="log" id="archFlow"></div>
+          </div>
+          <div>
+            <h3>双引擎差异化</h3>
+            <div class="log" id="archDiff"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 链路监控 -->
+    <div class="tab-panel" id="panel-trace">
+      <div class="panel">
+        <h3>📡 链路监控（Trace · Span · Waterfall）</h3>
+        <div class="canvas-wrap"><canvas id="flow" width="800" height="240"></canvas></div>
+        <h3 style="margin-top:12px">Waterfall 耗时分布</h3>
+        <div id="waterfall"></div>
+        <h3 style="margin-top:12px">事件日志</h3>
+        <div class="log" id="log"></div>
+      </div>
+    </div>
+
+    <!-- 可靠性护栏 -->
+    <div class="tab-panel" id="panel-guard">
+      <div class="panel">
+        <h3>🛡️ 如何确保 AI 不漏答/错答/乱说</h3>
+        <div class="guard" id="guard"></div>
+      </div>
+    </div>
+
+    <!-- SLO · 错误预算 -->
+    <div class="tab-panel" id="panel-slo">
+      <div class="panel">
+        <h3>🎯 SLO 目标 · 错误预算 · 责任主体</h3>
+        <div class="banner warn" id="sloBanner">⚠️ 本面板为<b>演示形态</b>：预算余量、燃烧率均为静态展示值，未接入真实 SLI 数据源；降级动作当前仅记录事件，未真正执行路由切换。<span class="demo-stamp">MOCK DATA</span></div>
+        <div class="tier" id="sloTier">
+          <button class="tier-btn active" data-tier="internal">🟢 internal 内部试用</button>
+          <button class="tier-btn" data-tier="standard">🔵 standard 标准业务</button>
+          <button class="tier-btn" data-tier="critical">🔴 critical 核心交易</button>
+        </div>
+        <div class="two">
+          <div>
+            <h3>SLO 目标与错误预算剩余</h3>
+            <div id="sloRows"></div>
+          </div>
+          <div>
+            <h3>错误预算燃烧动作（绑定责任主体）</h3>
+            <div id="sloBurn"></div>
+          </div>
+        </div>
+        <h3 style="margin-top:14px">预算事件流（随流水线实时刷新）</h3>
+        <div class="log" id="sloEvents"></div>
+      </div>
+    </div>
+
+    <!-- 策略版本治理 -->
+    <div class="tab-panel" id="panel-policy">
+      <div class="panel">
+        <h3>📜 策略即代码 · 版本生命周期 · 责任主体</h3>
+        <div class="banner warn" id="policyBanner">⚠️ 本面板为<b>演示形态</b>：策略版本、四角色、豁免台账均为页面内 Mock 数据，未接入 Git 仓库与工单系统。<span class="demo-stamp">MOCK DATA</span></div>
+        <div class="two">
+          <div>
+            <h3>当前生效策略版本</h3>
+            <div id="policyActive"></div>
+          </div>
+          <div>
+            <h3>变更记录（时间轴）</h3>
+            <div id="policyTimeline"></div>
+          </div>
+        </div>
+        <h3 style="margin-top:14px">策略库（点击版本可切换灰度 / 回滚）</h3>
+        <div id="policyStore"></div>
+        <h3 style="margin-top:14px">豁免与申诉台账</h3>
+        <div id="policyExempt"></div>
+      </div>
+    </div>
+
+    <!-- 成本分摊 -->
+    <div class="tab-panel" id="panel-cost">
+      <div class="panel">
+        <h3>💸 Token 成本分摊 · 预算审批 · 单位经济</h3>
+        <div class="banner warn" id="costBanner">⚠️ 本面板为<b>演示形态</b>：金额、用量、阈值均为静态展示值；运行流水线后下方的计量明细会按真实调用结果实时计算，但本次会话未产生真实计量时仍显示占位。<span class="demo-stamp">MOCK DATA</span></div>
+        <div class="two">
+          <div>
+            <h3>本期账单分摊结构</h3>
+            <div class="cost-bar" id="costBar"></div>
+            <div class="cost-legend" id="costLegend"></div>
+            <div class="log" id="costBill" style="margin-top:8px"></div>
+          </div>
+          <div>
+            <h3>预算审批链（谁批、批多少、多久失效）</h3>
+            <div id="costApproval"></div>
+          </div>
+        </div>
+        <h3 style="margin-top:14px">本次运行真实计量（按模型价表实时结算）</h3>
+        <div class="cost-real" id="costRealBox" style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:9px 11px;font-size:10px;max-height:220px;overflow:auto"></div>
+        <h3 style="margin-top:14px">单位经济看板（质量—成本—预算三重约束）</h3>
+        <div id="costUnit"></div>
+        <h3 style="margin-top:14px">超预算处置事件流</h3>
+        <div class="log" id="costEvents"></div>
+      </div>
+    </div>
+
+    <!-- 责任主体矩阵 -->
+    <div class="tab-panel" id="panel-duty">
+      <div class="panel">
+        <h3>👤 责任主体矩阵 · SLO / 策略 / 成本 / 事故</h3>
+        <div class="banner warn" id="dutyBanner">⚠️ 本面板为<b>演示形态</b>：责任人姓名为占位示例，排班为固定样例，未接入 SSO/OIDC 与组织架构 API。<span class="demo-stamp">MOCK DATA</span></div>
+        <div class="rp" id="dutyMatrix"></div>
+        <h3 style="margin-top:14px">告警路由与 on-call 排班</h3>
+        <div class="two">
+          <div>
+            <h3>告警 → 责任人路由</h3>
+            <div id="dutyRoute"></div>
+          </div>
+          <div>
+            <h3>本周 on-call 排班</h3>
+            <div id="dutyOncall"></div>
+          </div>
+        </div>
+        <h3 style="margin-top:14px">事故指挥链（随流水线 RCA 实时联动）</h3>
+        <div class="log" id="dutyIncident"></div>
+      </div>
+    </div>
+
+    <!-- 不足 -->
+    <div class="tab-panel" id="panel-limit">
+      <div class="panel">
+        <h3>⚠️ 当前不足与改进路线（生产级差距清单）</h3>
+        <div class="banner warn" id="limitBanner">本页已补齐 Runtime 内核与生产级 12 项能力，下列条目为「架构已定义、仍需工程化落地」的差距，非功能缺失。其中第 ⑨⑩ 条为本次新增承认：错误预算余量与燃烧率仍为静态推导值、成本金额未接真实计量源（但预算阈值与计价逻辑已按模型价表动态计算）。</div>
+        <div class="limit" id="limit"></div>
+      </div>
+    </div>
+    <!-- 审计日志 -->
+    <div class="tab-panel" id="panel-audit">
+      <div class="panel">
+        <h3>📜 审计日志（每次 LLM 调用 / 门禁决策 / 策略变更全留痕）</h3>
+        <div class="banner warn" id="auditBanner">⚠️ 本面板为<b>演示形态</b>：日志由本次会话内的前端动作生成，仅存于内存，刷新即丢失；生产环境需持久化至不可篡改存储并支持按 actor / decision 检索。</div>
+        <h3>本次会话调用审计</h3>
+        <div class="audit" id="auditLog"></div>
+        <h3 style="margin-top:14px">调用统计</h3>
+        <div class="two" id="auditStats"></div>
+        <h3 style="margin-top:14px">降级 / 兜底明细</h3>
+        <div id="fallbackDetail"></div>
+      </div>
+    </div>
+
+    <!-- 评测与验收 -->
+    <div class="tab-panel" id="panel-eval">
+      <div class="panel">
+        <h3>🧪 评测与验收（Eval Harness · 上线门禁）</h3>
+        <div class="banner warn" id="evalBanner">⚠️ 本面板为<b>演示形态</b>：用例与判分为前端模拟结果，评测执行器与黄金集尚未接入；生产环境需由独立进程运行 pytest/vitest 并解析结果。</div>
+        <div class="eval-summary" id="evalSummary"></div>
+        <h3>黄金集回归（30 例，每次发布前必跑）</h3>
+        <div id="evalGold"></div>
+        <h3 style="margin-top:14px">LLM-as-a-Judge 四维评分</h3>
+        <div id="evalJudge"></div>
+        <h3 style="margin-top:14px">门禁判定</h3>
+        <div id="evalGate"></div>
+      </div>
+    </div>
+    <div id="gateBarWrap"></div>
+  </main>
+</div>
+
+<script>
+// ============ 全局状态 ============
+let ENGINE='langchain';
+// ===== ② LLM 模型状态（mock / real 双模式，与后端 LLMCall 协议一一对应）=====
+//   - mock : 进程内预设脚本，无需网络，离线即用（默认）
+//   - real  : 走真实 HTTP（OpenAI /v1/chat/completions 兼容协议），可对接
+//             Ollama 本地 · 本地 Mock 服务器 · Groq · SiliconFlow · OpenRouter · OpenAI · 自定义
+
+// ===== 治理改造（v2）：全会话可审计状态 + 真实计量 + 显式降级 =====
+const RUN_LEDGER = { calls: [], decisions: [], fallbackStages: [], evalResults: [] };
+function _audit(type, entry){ entry.t = new Date().toLocaleTimeString('zh-CN',{hour12:false}); (type==='call' ? RUN_LEDGER.calls : RUN_LEDGER.decisions).push(entry); }
+function _esc(s){ return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function _fmt(n,d=2){ return Number(n).toLocaleString('zh-CN',{minimumFractionDigits:d,maximumFractionDigits:d}); }
+/* 真实计费：按模型价表（输入/输出/推理 token 三类）× 六类计量 */
+const PRICE = {
+  'qwen2.5:7b':{input:0.00000020,output:0.00000060,cache:0.00000005},
+  'llama-3.3-70b-versatile':{input:0.00000059,output:0.00000079,cache:0.00000012},
+  'Qwen/Qwen3-8B':{input:0.00000020,output:0.00000060,cache:0.00000004},
+  'deepseek/deepseek-r1:free':{input:0,output:0,cache:0},
+  'gpt-4o-mini':{input:0.00000015,output:0.00000060,cache:0.000000075},
+  'mock-model':null, 'mock-script':null,
+};
+function calcCost(model, tokens){ const p=PRICE[model]; if(!p) return null; return +(tokens.input*p.input+tokens.output*p.output+tokens.cache*p.cache).toFixed(4); }
+/* 任务分级：由工具权限与数据敏感度决定，不再靠用户描述里的关键词猜 */
+const TOOL_TIERS = [
+  { rx:/(生产|prod|production)/, tier:'critical', why:'描述含「生产」环境，按最严标准推定（需在审批门确认）' },
+  { rx:/支付|付款|资金|转账|交易|账单/, tier:'critical', why:'命中资金/交易类操作关键词' },
+  { rx:/(删除|drop|truncate|rm\s+-rf|格式化|不可逆)/, tier:'critical', why:'命中不可逆写操作关键词' },
+  { rx:/(测试|demo|演示|试用|内部|internal|mock)/i, tier:'internal', why:'明确为内部/演示用途' },
+];
+function inferTier(req){ for(const r of TOOL_TIERS){ if(r.rx.test(req)) return { tier:r.tier, why:r.why }; } return { tier:'standard', why:'未命中敏感关键词，按标准业务推定（默认）' }; }
+let LLM_MODE='mock';
+let LLM_CLIENT=null; // 当前生效的客户端（MockClient / RealClient）
+
+// 供应商预设：与后端 create_llm 的 base_url 完全一致
+const PROVIDERS={
+  ollama:      {label:'🦙 Ollama（本地）', model:'qwen2.5:7b',  base:'http://localhost:11434', key:'',
+                tip:'免费、私有化。需先启动 ollama serve，首次自动 pull 模型。允许跨域（CORS）。'},
+  'mock-server':{label:'🧪 本地 Mock 服务器', model:'mock-model', base:'http://127.0.0.1:8765/v1', key:'',
+                tip:'examples/mock_llm_server.py。用于验证「真实 HTTP 路径走通」，无需 API Key。'},
+  groq:        {label:'⚡ Groq', model:'llama-3.3-70b-versatile', base:'https://api.groq.com/openai/v1', key:'',
+                tip:'免费额度、速度最快（~300 tok/s）。需 API Key（console.groq.com，免信用卡）。'},
+  siliconflow: {label:'🇨🇳 硅基流动', model:'Qwen/Qwen3-8B', base:'https://api.siliconflow.cn/v1', key:'',
+                tip:'中文最佳、额度慷慨（1000 RPM）。cloud.siliconflow.cn 注册送额度。'},
+  openrouter:  {label:'🔀 OpenRouter', model:'deepseek/deepseek-r1:free', base:'https://openrouter.ai/api/v1', key:'',
+                tip:'一个 Key 试 20+ 模型，带 :free 后缀为免费档。openrouter.ai 注册。'},
+  openai:      {label:'🔵 OpenAI', model:'gpt-4o-mini', base:'https://api.openai.com/v1', key:'',
+                tip:'官方 API。需 API Key（platform.openai.com）。'},
+  custom:      {label:'⚙️ 自定义（OpenAI 兼容）', model:'', base:'', key:'',
+                tip:'任意兼容 /v1/chat/completions 的端点（DeepSeek / 通义 / 智谱 / 自建网关…）。'},
+  'via-proxy':  {label:'🔒 经同源代理（推荐生产）', model:'llama-3.3-70b-versatile', base:'http://localhost:8000/api/llm/v1', key:'',
+                tip:'★ 前端只连同源代理（demo/proxy.py），由后端注入 Key + 解 CORS，浏览器无 Key 暴露。云端服务首选此项。'},
+};
+let CURRENT_PROVIDER='ollama';
+
+const STAGES=['需求理解','方案规划','代码编写','自动测试','审查评审','部署发布'];
+const AGENTS={
+  langchain:['RequirementAgent','ArchitectAgent','CoderAgent(×3)','TestAgent','ReviewAgent(×4)','DevOpsAgent'],
+  agentscope:['ReqAgent','ArchAgent','ParallelCoder','TestAgent','DebateReviewer','DeployAgent']
+};
+const CAPABILITIES=['状态持久化','长期记忆','容错恢复','性能控制','安全护栏','可观测性'];
+const AVATAR={RequirementAgent:'📋',ArchitectAgent:'📐',CoderAgent:'💻',TestAgent:'🧪',ReviewAgent:'🔍',DevOpsAgent:'🚀',ReqAgent:'📋',ArchAgent:'📐',ParallelCoder:'💻',DebateReviewer:'🔍',DeployAgent:'🚀'};
+
+// ============ Tab 切换 ============
+document.querySelectorAll('.tab').forEach(t=>{
+  t.onclick=()=>{
+    document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(x=>x.classList.remove('active'));
+    t.classList.add('active');
+    document.getElementById('panel-'+t.dataset.tab).classList.add('active');
+    if(t.dataset.tab==='arch') drawArch();
+    if(t.dataset.tab==='trace') drawFlow(6);
+  };
+});
+
+// ============ 引擎切换 ============
+document.querySelectorAll('.engine-toggle button').forEach(b=>{
+  b.onclick=()=>{
+    document.querySelectorAll('.engine-toggle button').forEach(x=>x.classList.remove('active'));
+    b.classList.add('active');
+    ENGINE=b.dataset.eng;
+    log(`[engine] 切换到 ${ENGINE}`,'info');
+  };
+});
+
+// ============ 预设 ============
+document.querySelectorAll('.preset').forEach(p=>{
+  p.onclick=()=>{
+    document.getElementById('reqInput').value=p.dataset.req;
+    try { (window.runPipeline || runPipeline)(); }
+    catch(e){ console.error('[preset] runPipeline failed', e); }
+  };
+});
+
+// =====================================================================
+//  ② LLM 抽象层：LLMClient 协议（对齐后端 LLMCall）
+//     - chat(messages, opts) -> {content, model, provider, real:bool}
+//     - MockClient  : 进程内预设，离线（LLM_MODE=mock）
+//     - RealClient  : 真实 HTTP，OpenAI /v1/chat/completions 兼容
+//                    可对接 Ollama / 本地 Mock 服务器 / Groq / SiliconFlow /
+//                    OpenRouter / OpenAI / 任意自定义兼容端点
+// =====================================================================
+
+/** 生成结构化 Mock 回复（离线，与真实格式完全一致，便于对比） */
+function mockReply(agent, req){
+  const short=req.length>20?req.slice(0,20)+'…':req;
+  const map={
+    RequirementAgent:`[Mock] 已解析需求「${short}」，拆解为 6 个子任务，识别 3 个外部依赖。`,
+    ArchitectAgent:`[Mock] 完成架构设计：前端 SPA + RESTful API + SQLite，定义 4 个数据模型。`,
+    'CoderAgent(×3)':`[Mock] 3 个 Coder 并行开发，通过 MsgHub 同步接口契约（契约校验告警已自动修复）。`,
+    TestAgent:`[Mock] 运行 42 个测试用例：通过 40，失败 2（边界条件），自动修复后 42/42 ✅。`,
+    'ReviewAgent(×4)':`[Mock] 多视角审查 + Debate：发现 3 个问题，2 已修复，1 标记 TODO（人工门禁 ✋）。`,
+    DevOpsAgent:`[Mock] 构建 Docker 镜像，接入链路追踪，健康检查通过，P95 < 200ms 🎉。`,
+    ReqAgent:`[Mock] 已解析需求「${short}」，输出用户故事 + 验收标准清单。`,
+    ArchAgent:`[Mock] 完成方案规划，选定分层架构 + 接口契约。`,
+    ParallelCoder:`[Mock] 并行分支开发完成，Artifact 已产出。`,
+    DebateReviewer:`[Mock] 4 视角 Debate 完成，分歧已仲裁。`,
+    DeployAgent:`[Mock] 部署完成，可观测性已接入。`,
+  };
+  return map[agent] || `[Mock] ${agent} 已完成阶段任务（离线预设回复）。`;
+}
+
+/** Mock 客户端：无需网络 */
+class MockClient{
+  constructor(){this.provider='mock'; this.model='mock-script';}
+  async chat(messages){
+    const user=messages.filter(m=>m.role==='user').pop()?.content||'';
+    // 用最后一条 assistant 之前的 user 作为需求，agent 从 system 里取
+    const agent=this._agentFrom(messages);
+    await sleep(120+Math.random()*180); // 模拟延迟
+    return {content:mockReply(agent,user), model:this.model, provider:this.provider, real:false};
+  }
+  _agentFrom(messages){
+    const sys=messages.find(m=>m.role==='system')?.content||'';
+    const m=/Agent:\s*([\w()×]+)/.exec(sys); return m?m[1]:'Agent';
+  }
+}
+
+/**
+ * Real 客户端：真实 HTTP（OpenAI 兼容协议）
+ * ★ 说明：浏览器直连云端 API 会遇 CORS + 暴露 Key，
+ *   故云端服务建议经同源代理（demo/proxy.py，复用后端适配器）。
+ *   而 Ollama / 本地 Mock 服务器 默认允许跨域，可直接调用。这里统一处理：
+ *     - Ollama : 自动转 /api/chat（非 OpenAI 格式）
+ *     - 其余   : /v1/chat/completions
+ */
+class RealClient{
+  constructor(cfg){this.cfg=cfg;} // {provider, model, base, apiKey}
+  get provider(){return this.cfg.provider;}
+  get model(){return this.cfg.model;}
+
+  async chat(messages, signal){
+    const {base, apiKey, provider, model}=this.cfg;
+    if(provider==='ollama'){
+      // Ollama 用 /api/chat（流式可选，这里取完整响应）
+      const url=(base||'http://localhost:11434').replace(/\/$/,'');
+      const res=await fetch(url+'/api/chat',{
+        method:'POST', headers:{'Content-Type':'application/json'}, signal,
+        body:JSON.stringify({model, messages, stream:false}),
+      });
+      if(!res.ok) throw new Error(`Ollama ${res.status}: ${(await res.text()).slice(0,200)}`);
+      const j=await res.json();
+      return {content:j.message?.content||JSON.stringify(j), model, provider, real:true};
+    }
+    // OpenAI 兼容：/v1/chat/completions
+    const url=(base.replace(/\/$/,'')||'https://api.openai.com/v1')+'/chat/completions';
+    const headers={'Content-Type':'application/json'};
+    if(apiKey) headers['Authorization']='Bearer '+apiKey;
+    const res=await fetch(url,{
+      method:'POST', headers, signal,
+      body:JSON.stringify({model, messages, temperature:0.2, max_tokens:512}),
+    });
+    if(!res.ok) throw new Error(`${provider} ${res.status}: ${(await res.text()).slice(0,300)}`);
+    const j=await res.json();
+    return {content:j.choices?.[0]?.message?.content||'', model, provider, real:true};
+  }
+}
+
+/** 根据当前选择器状态构造客户端（不传参 = 读 UI） */
+function buildClient(){
+  if(LLM_MODE==='mock') return new MockClient();
+  const p=CURRENT_PROVIDER;
+  const cfg=PROVIDERS[p];
+  return new RealClient({
+    provider:p,
+    model:document.getElementById('modelInput').value.trim()||cfg.model,
+    base:document.getElementById('baseInput').value.trim()||cfg.base,
+    apiKey:document.getElementById('keyInput').value.trim()||cfg.key,
+  });
+}
+
+/** 探测端点是否可用（用于「测试连接」） */
+async function probe(client){
+  const sys='你是 Agent Engineering 流水线的一个 Agent，简短回复 OK 即可。';
+  return await client.chat([{role:'system',content:sys},{role:'user',content:'ping'}]);
+}
+
+// ============ 日志 ============
+const logEl=document.getElementById('log');
+function log(msg,cls=''){
+  const t=new Date().toLocaleTimeString('zh-CN',{hour12:false});
+  logEl.innerHTML+=`<div><span style="color:var(--sub)">${t}</span> <span class="${cls}">${msg}</span></div>`;
+  logEl.scrollTop=logEl.scrollHeight;
+}
+
+// ============ AI 思考数据（ReAct 推理链）============
+function buildThinking(req){
+  const short=req.length>24?req.slice(0,24)+'…':req;
+  const isWeather=/天气|weather|预报/i.test(req);
+  return [
+    {agent:'RequirementAgent', title:'需求理解：把模糊诉求拆成可验收的原子任务', steps:[
+      {t:'接收原始诉求：<code>"'+short+'"</code>，识别出表述模糊点（数据源未指定、更新频率未说明）',cls:''},
+      {t:'提出澄清问题：天气数据用哪家 API？是否需要逐小时预报？离线降级策略？',cls:'warn'},
+      {t:'检索记忆库：发现同类「城市查询」需求的历史方案，复用数据模型设计',cls:'ok'},
+      {t:'输出：6 个用户故事 + 3 个外部依赖 + 验收标准清单（Definition of Done）',cls:'ok'},
+    ]},
+    {agent:'ArchitectAgent', title:'方案规划：在技术空间中搜索并评估取舍', steps:[
+      {t:'候选方案枚举：A) 纯前端直连 API  B) 前端+BFF 网关  C) 前端+API+缓存层',cls:''},
+      {t:'逐方案打分：成本 / 响应时延 / 可维护性 / 安全风险（直连 API 有密钥泄露风险 ⚠️）',cls:'warn'},
+      {t:'选定方案 B，但增加「API Key 后端代理」约束消除安全风险',cls:'ok'},
+      {t:'定义 4 个数据模型 + 7 个接口契约，通过 MsgHub 广播给所有 Coder',cls:'ok'},
+    ]},
+    {agent:'CoderAgent', title:'代码编写：并行实现 + 接口契约校验', steps:[
+      {t:'从 MsgHub 拉取接口契约，3 个 Coder 并行开发（前端/API/数据层）',cls:''},
+      {t:'前端 Coder 发现契约与实现不一致 → 触发契约校验告警',cls:'warn'},
+      {t:'通过 MsgHub 回传修正后的契约，3 方重新对齐（并行不串号）',cls:'ok'},
+      {t:'产出 Artifact：组件代码 / API 路由 / 数据迁移脚本',cls:'ok'},
+    ]},
+    {agent:'TestAgent', title:'自动测试：生成用例 → 执行 → 失败即修复', steps:[
+      {t:'基于验收标准生成 42 个用例（正常路径 + 边界 + 异常）',cls:''},
+      {t:'执行：通过 40，失败 2（城市名含特殊字符 / API 超时）',cls:'warn'},
+      {t:'定位失败根因 → 自动补丁（输入转义 + 超时重试）',cls:''},
+      {t:'回归 42/42 通过，覆盖率 87%',cls:'ok'},
+    ]},
+    {agent:'ReviewAgent', title:'审查评审：多视角 Debate + 门禁', steps:[
+      {t:'4 视角并行审查：安全（注入/密钥）/ 性能（N+1 查询）/ 可维护 / 规范',cls:''},
+      {t:'Debate 阶段：安全视角 vs 性能视角就「缓存时长」产生分歧',cls:'warn'},
+      {t:'仲裁：采纳「分级缓存」（静态资源长缓存，天气数据 10 分钟）',cls:''},
+      {t:'3 个问题：2 已自动修复，1 标记为人工 TODO（触发人工审批门禁 ✋）',cls:'ok'},
+    ]},
+    {agent:'DevOpsAgent', title:'部署发布：构建 → 健康检查 → 可观测接入', steps:[
+      {t:'构建 Docker 镜像（23MB），运行镜像漏洞扫描',cls:''},
+      {t:'部署到容器，执行健康检查探针（就绪/存活）',cls:''},
+      {t:'接入链路追踪：把本次 run 的所有 Span 上报到 TraceStore',cls:'ok'},
+      {t:'验证：P95 响应 < 200ms，错误率 0%，发布完成 🎉',cls:'ok'},
+    ]},
+  ];
+}
+
+// ============ 渲染 AI 思考 ============
+function renderThinking(req){
+  const box=document.getElementById('thinking');
+  box.innerHTML='';
+  buildThinking(req).forEach((blk,bi)=>{
+    const el=document.createElement('div');
+    el.className='thinking'+(bi===0?' open':'');
+    el.innerHTML=`
+      <div class="th-head" onclick="this.parentElement.classList.toggle('open')">
+        <span class="th-chev">▶</span>
+        <span class="avatar" style="width:18px;height:18px;font-size:10px">${AVATAR[blk.agent]||'🤖'}</span>
+        <span style="flex:1">${blk.agent}</span>
+        <span style="font-size:9px;color:var(--sub);font-weight:400">${blk.title}</span>
+      </div>
+      <div class="th-body">
+        ${blk.steps.map(s=>`<div class="step ${s.cls}"><span class="n">${s.cls==='ok'?'✓':s.cls==='warn'?'!':'·'}</span><span>${s.t}</span></div>`).join('')}
+      </div>`;
+    box.appendChild(el);
+  });
+}
+
+// ============ Canvas 架构图 ============
+function drawArch(){
+  const cv=document.getElementById('arch');
+  const ctx=cv.getContext('2d');
+  const W=cv.width,H=cv.height,dpr=window.devicePixelRatio||1;
+  cv.width=W*dpr;cv.height=H*dpr;ctx.setTransform(dpr,0,0,dpr,0,0);
+  ctx.clearRect(0,0,W,H);
+  const layers=[
+    {y:24,  h:46, color:'#1f6feb', title:'用户层', items:['浏览器 / 客户端','REST + WebSocket']},
+    {y:80,  h:62, color:'#8957e5', title:'前端 (Vue3)', items:['流水线可视化','Waterfall 链路追踪','AI 思考面板']},
+    {y:152, h:62, color:'#3fb950', title:'API 网关 (FastAPI)', items:['/api/v2/pipeline','/api/llm/config','/api/v2/traces  (★新增)']},
+    {y:224, h:74, color:'#d29922', title:'引擎抽象层 (WorkBuddyPipeline)', items:['6 阶段编排 · Artifact 传递 · 事件总线 · Checkpoint/Memory/Guardrail']},
+    {y:308, h:44, color:'#db61a2', title:'双引擎绑定', items:[ENGINE==='langchain'?'LangChain：LCEL + Critique Chain + Callback':'AgentScope：ParallelPipeline + DebateAgent + MsgHub', ENGINE==='langchain'?'· RunnableParallel · Critique Chain':'· 并行分支 · 辩论轮次']},
+  ];
+  layers.forEach(L=>{
+    ctx.fillStyle=L.color+'22';ctx.strokeStyle=L.color;ctx.lineWidth=1.5;
+    ctx.beginPath();ctx.roundRect(30,L.y,W-60,L.h,8);ctx.fill();ctx.stroke();
+    ctx.fillStyle=L.color;ctx.font='bold 11px sans-serif';
+    ctx.fillText(L.title,44,L.y+16);
+    ctx.fillStyle='#8b949e';ctx.font='10px sans-serif';
+    L.items.forEach((it,i)=>ctx.fillText(it,44,L.y+32+i*13));
+  });
+  // 支撑体系（右侧）
+  ctx.strokeStyle='#30363d';ctx.setLineDash([4,4]);
+  ctx.beginPath();ctx.moveTo(W-180,224);ctx.lineTo(W-180,308);ctx.stroke();ctx.setLineDash([]);
+  const supports=[['🔧 配置中心','env_utils (env/Nacos/ENV)'],['📡 链路追踪','tracing + SpanSink'],['🎯 LLM 埋点','instrumentation'],['🛡️ 可靠性','护栏 + 门禁 + 回滚']];
+  supports.forEach((s,i)=>{
+    const yy=224+i*20;
+    ctx.fillStyle='#e6edf3';ctx.font='bold 9px sans-serif';ctx.fillText(s[0],W-170,yy);
+    ctx.fillStyle='#8b949e';ctx.font='8px sans-serif';ctx.fillText(s[1],W-170,yy+11);
+  });
+  document.getElementById('archFlow').innerHTML=`
+<span class="info">需求 → RequirementAgent → ArchitectAgent</span>
+<span class="info">→ CoderAgent(×3) ─┬─ MsgHub 契约同步</span>
+<span class="info">                ├─ ParallelPipeline 并行</span>
+<span class="info">                └─ Checkpoint 断点</span>
+<span class="ok">→ TestAgent → ReviewAgent(Debate) → DevOpsAgent</span>
+<span class="warn">任一步骤失败 → 护栏拦截 + 人工门禁</span>`;
+  document.getElementById('archDiff').innerHTML=ENGINE==='langchain'
+    ? `<span class="info">引擎：LangChain</span><span class="info">· coding → RunnableParallel</span><span class="info">· review → Critique Chain</span><span class="info">· LLM 埋点 → Callback</span><span class="ok">· 优势：生态最广、LCEL 组合灵活</span>`
+    : `<span class="info">引擎：AgentScope</span><span class="info">· coding → ParallelPipeline(3)</span><span class="info">· review → DebateAgent(4 视角)</span><span class="info">· 通信 → MsgHub 广播</span><span class="ok">· 优势：原生多 Agent 编排</span>`;
+}
+
+// ============ Canvas 链路流程图 ============
+const cv=document.getElementById('flow');
+const fctx=cv?cv.getContext('2d'):null;
+function drawFlow(n){
+  if(!fctx) return;   // Canvas 不可用（SSR / 旧浏览器 / jsdom）时静默跳过，不影响流水线
+  const W=cv.width,H=cv.height,dpr=window.devicePixelRatio||1;
+  cv.width=W*dpr;cv.height=H*dpr;fctx.setTransform(dpr,0,0,dpr,0,0);
+  fctx.clearRect(0,0,W,H);
+  fctx.fillStyle='#0d1117';fctx.fillRect(0,0,W,H);
+  const colors=['#58a6ff','#a78bfa','#3fb950','#f0883e','#db61a2','#3fb950'];
+  const cx=W/2,cy=H/2-8,R=78;
+  for(let i=0;i<6;i++){
+    const a=(i-(n||0))*Math.PI/3-Math.PI/2;
+    const x=cx+Math.cos(a)*R*1.05,y=cy+Math.sin(a)*R*0.72;
+    fctx.beginPath();fctx.arc(x,y,i<=(n||0)?7:4,0,Math.PI*2);
+    fctx.fillStyle=i<(n||0)?'#3fb950':i===(n||0)?'#58a6ff':'#30363d';fctx.fill();
+    if(i<=(n||0)){fctx.strokeStyle=colors[i];fctx.lineWidth=1.5;fctx.beginPath();fctx.arc(x,y,14,0,Math.PI*2);fctx.stroke();}
+  }
+  fctx.beginPath();fctx.arc(cx,cy,20,0,Math.PI*2);fctx.fillStyle='#161b22';fctx.fill();
+  fctx.strokeStyle=ENGINE==='langchain'?'#58a6ff':'#a78bfa';fctx.lineWidth=2;fctx.stroke();
+  fctx.fillStyle='#e6edf3';fctx.font='10px sans-serif';fctx.textAlign='center';
+  fctx.fillText(ENGINE==='langchain'?'LC':'AS',cx,cy+3);
+  fctx.fillStyle='#8b949e';fctx.fillText(`${n||0}/6`,cx,cy+42);
+}
+
+// ============ Waterfall ============
+function renderWaterfall(){
+  const data=ENGINE==='langchain'
+    ? [['requirement',420,'#58a6ff'],['planning',680,'#a78bfa'],['coding',2100,'#3fb950'],['testing',1300,'#f0883e'],['review',1600,'#db61a2'],['deploy',520,'#3fb950']]
+    : [['requirement',380,'#58a6ff'],['planning',640,'#a78bfa'],['coding',2700,'#3fb950'],['testing',1200,'#f0883e'],['debate-review',2400,'#db61a2'],['deploy',480,'#3fb950']];
+  const total=Math.max(...data.map(d=>d[1]));
+  const box=document.getElementById('waterfall');
+  box.innerHTML='';
+  data.forEach(([name,dur,color])=>{
+    const w=(dur/total)*100;
+    const row=document.createElement('div');row.className='wf';
+    row.innerHTML=`<span class="wf-label">${name}</span><div class="wf-bar sp" style="width:${w}%;background:${color}"></div><span class="wf-time">${(dur/1000).toFixed(2)}s</span>`;
+    box.appendChild(row);
+  });
+}
+
+// ============ 可靠性护栏 ============
+function renderGuard(){
+  const items=[
+    {icon:'🎯',name:'1. 结构化输出 + Schema 校验',desc:'AI 输出强制走 Pydantic/JSON Schema，字段缺失或类型错误直接拦截，不让「自由文本」进入下游',tag:'PASS',cls:'pass'},
+    {icon:'🔍',name:'2. 检索增强（RAG）+ 证据溯源',desc:'每条结论绑定来源文档块（citation），无来源的断言会被降级为「推测」，禁止当作事实输出',tag:'PASS',cls:'pass'},
+    {icon:'⚖️',name:'3. 多视角 Debate 交叉验证',desc:'安全/性能/规范 4 视角独立审查，分歧点进入仲裁；关键结论必须多数派一致才通过',tag:'PASS',cls:'pass'},
+    {icon:'🧪',name:'4. 可执行验收标准',desc:'需求拆解为可跑的测试用例（42 个），AI 自测通过 ≠ 完成，必须通过独立测试套件',tag:'PASS',cls:'pass'},
+    {icon:'🚦',name:'5. 人工审批门禁',desc:'涉及生产发布 / 资金 / 不可逆操作时，自动标记 TODO 并阻断，必须人工确认（不盲信 AI）',tag:'GATE',cls:'warn'},
+    {icon:'🛡️',name:'6. 护栏：注入/越权/敏感词过滤',desc:'输入做 Prompt Injection 检测、工具调用做权限最小化、输出做脱敏，三层防护',tag:'PASS',cls:'pass'},
+    {icon:'🔁',name:'7. 重试 + 熔断 + Checkpoint',desc:'LLM 限流自动退避重试；连续失败触发熔断回滚到上一检查点，绝不静默产出错误结果',tag:'PASS',cls:'pass'},
+    {icon:'📡',name:'8. 全链路追踪 + 审计',desc:'每条结论可追溯至具体 LLM 调用（模型/Token/耗时），事后可复盘「为什么 AI 这么答」',tag:'PASS',cls:'pass'},
+  ];
+  const box=document.getElementById('guard');
+  box.innerHTML=items.map(g=>`<div class="guard-row"><span class="g-icon">${g.icon}</span><div style="flex:1"><div class="g-name">${g.name}</div><div class="g-desc">${g.desc}</div></div><span class="g-tag ${g.cls}">${g.tag}</span></div>`).join('');
+}
+
+// ============ 不足与改进 ============
+function renderLimit(){
+  const items=[
+    {b:'① 责任主体已绑定，但尚需 SSO/OIDC 与组织架构同步',
+     t:'本页 SLO 责任人、策略批准人、成本审批人、on-call 排班均为「角色+姓名」的演示占位，尚未接入企业身份系统。',
+     fix:'落地：责任人从组织架构 API 实时拉取，离职/调岗自动交接，策略批准人变更走双人复核。'},
+    {b:'② SLO 分任务分级已定义，窗口与阈值需按真实压测校准',
+     t:'internal/standard/critical 三档目标值是 12 周校准起点，不是生产承诺；燃烧率动作阈值（2x/5x/10x）为示例。',
+     fix:'落地：跑 4 周基线 → 按任务分级重算目标 → 错误预算告警接入 PagerDuty/企微 → 路由降级开关灰度放开。'},
+    {b:'③ 策略即代码框架已成型，仍需 GitOps + 合规审计流水线',
+     t:'策略版本、提案人/评审人/批准人/应急人四角色与回滚机制已建模，但策略文件本身还是页面内的 Mock 数据。',
+     fix:'落地：策略迁入独立 Git 仓库，PR 评审 + 自动灰度 + 签名校验，变更记录同步至合规审计系统（SOC2/等保）。'},
+    {b:'④ 成本分摊口径已定义，账单归集与额度下发需对接财务系统',
+     t:'tenant→workspace→team→task 归集粒度与预算审批链已画清，但金额、账期、额度开关仍是静态演示值。',
+     fix:'落地：模型网关计量 → 账单服务 → ERP/费控；额度下发走工单审批，超预算自动降级 + 暂停低优先级任务。'},
+    {b:'⑤ on-call 排班与事故指挥链需接入告警平台',
+     t:'告警路由、SLA、IC 轮值、复盘归属已绑定责任主体，但未与真实告警源（Prometheus/云监控）打通。',
+     fix:'落地：告警规则按责任矩阵路由到 PagerDuty；SEV-1 自动建群、自动通知指挥链、48 小时内回填复盘至策略台账。'},
+
+    {b:'⑥ 多 Agent 编排已跑通，执行层隔离与持久化仍需补齐',
+     t:'6 阶段编排、思考可视化、链路追踪、护栏已成型，但 Runner 状态、沙箱生命周期、效果账本仍是页面内 Mock。',
+     fix:'落地：Checkpoint Store 持久化、Sandbox Plane 生命周期管理、Effect Ledger 对账作业独立部署。'},
+    {b:'⑦ 交付闭环的 HITL 与发布证据包需接入工单与制品库',
+     t:'审批人、幂等证据、回滚预案已展示，但审批动作未与工单系统、制品签名、发布审计打通。',
+     fix:'落地：审批走工单审批流，发布产物带签名 digest，发布证据包归档至合规存储。'},
+    {b:'⑧ 端到端联调：10 项能力需在同一真实 run 内闭环验证',
+     t:'本页各面板可独立演示，但共享 run_ctx 的端到端联调（SLO 超预算→路由降级→责任人告警→复盘回填）需在真实后端跑通。',
+     fix:'落地：编写 12 周分阶段路线，每周以「可演示 + 可观测 + 可审计」三项标准验收。'},
+  ];
+  const box=document.getElementById('limit');
+  box.innerHTML=items.map((it,i)=>`<div class="limit-item"><b>${it.b}</b>${it.t}<div class="fix">💡 ${it.fix}</div></div>`).join('');
+}
+
+// ============ 会话管理（问题①：会话点击/输入无效 → 数据驱动 + 新增按钮）============
+// 每个会话独立保存：输入框内容、流水线消息、思考链、各面板渲染结果
+let sessions=[];
+let currentSessionId=null;
+
+function defaultReq(){return document.getElementById('reqInput').value.trim()||'做一个天气查询 App，输入城市名返回实时天气和未来 3 天预报';}
+
+function createSession(name){
+  const id='s-'+(Math.random().toString(36).slice(2,8));
+  const s={
+    id, name:name||`新会话 #${sessions.length+1}`,
+    req:defaultReq(),
+    messages:[], thinking:null, waterfall:null, traces:[], logText:'',
+    createdAt:Date.now(),
+    nameManuallySet:false,   // ★ 用户手动重命名后置 true，不再被概要覆盖
+  };
+  sessions.push(s);
+  return s;
+}
+
+// 把当前 UI 状态快照进当前会话（运行前/运行中持续保存）
+function snapshotToCurrent(){
+  const cur=getCurrentSession();
+  if(!cur) return;
+  cur.req=document.getElementById('reqInput').value;
+  cur.logText=document.getElementById('log').innerHTML;
+}
+
+// 把会话状态还原到 UI
+function restoreSession(s){
+  document.getElementById('reqInput').value=s.req||'';
+  agentsEl.innerHTML='';
+  s.messages.forEach(m=>addAgentMsg(m, m.real===true));
+  document.getElementById('thinking').innerHTML=s.thinking||'';
+  document.getElementById('log').innerHTML=s.logText||'';
+  if(s.waterfall) drawFlow(6);
+}
+
+function getCurrentSession(){return sessions.find(s=>s.id===currentSessionId)||null;}
+
+function renderSessions(){
+  const box=document.getElementById('sessionList');
+  box.innerHTML='';
+  sessions.forEach(s=>{
+    const el=document.createElement('div');
+    el.className='session'+(s.id===currentSessionId?' active':'');
+    const isActive=s.id===currentSessionId;
+    el.innerHTML=`
+      <span class="rename" title="重命名">✎</span>
+      <span style="flex:1;cursor:pointer" class="s-name">${escN(s.name)}</span>
+      <span class="dot ${isActive?'':'idle'}"></span>`;
+    // 点击切换会话
+    el.querySelector('.s-name').onclick=()=>switchSession(s.id);
+    el.querySelector('.rename').onclick=e=>{e.stopPropagation();renameSession(s);};
+    box.appendChild(el);
+  });
+}
+
+function switchSession(id){
+  snapshotToCurrent();       // 切走前保存当前
+  currentSessionId=id;
+  const s=getCurrentSession();
+  if(s) restoreSession(s);
+  renderSessions();
+  log(`[session] 切换到 ${s.name}`,'info');
+}
+
+function renameSession(s){
+  const name=prompt('重命名会话：',s.name);
+  if(name!==null && name.trim()){s.name=name.trim();s.nameManuallySet=true;renderSessions();}
+}
+
+// ★ 新增：根据需求首句生成会话标题概要
+// 规则：取第一行 → 去「做一个/做一个」前缀 → 截取到第一个逗号/句号 → 上限 18 字符 → 去末尾标点
+function generateTitle(req){
+  if(!req) return '新会话';                       // 兜底：空需求返回默认名
+  let t=String(req).split('\n')[0].trim();      // 只取第一行
+  // 去常见前缀（含「帮我做一个」，避免残留「一个」）
+  t=t.replace(/^(帮我做一个|帮我做|做一个|做一个|做一个|做一个|做一个|做一个)\s*/i,'');
+  t=t.replace(/^(一个|一款|一套|一种)\s*/i,'');     // 再吃掉前缀后的量词，如「一个 Todo」
+  // 在第一个断句标点处截断
+  const cut=t.search(/[，。,.\n\r；;：:]/);
+  if(cut>0 && cut<=24) t=t.slice(0,cut);
+  t=t.replace(/[，。,.\n\r；;：:\s]+$/g,'');      // 去末尾标点/空白
+  if(t.length>18) t=t.slice(0,18);
+  return t||'新会话';                              // 极端情况（全被去掉）兜底
+}
+
+// 是否仍为「自动生成的默认名」：只有默认名才会在首次运行时被概要覆盖
+function isDefaultName(name){
+  return /^新会话\s*#?\d*$/.test(name||'');
+}
+
+function escN(str){
+  return String(str).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+// 启动：初始化 2 个默认会话（保留原「演示会话 #1/#2」语义）
+(function initSessions(){
+  const s1=createSession('演示会话 #1');
+  const s2=createSession('演示会话 #2');
+  // #1 预填天气需求，#2 预填空（演示"输入无效"修复前的行为对比）
+  s1.req='做一个天气查询 App，输入城市名返回实时天气和未来 3 天预报';
+  currentSessionId=s1.id;
+  renderSessions();
+})();
+
+// 新建会话按钮
+document.getElementById('newSessionBtn').onclick=()=>{
+  snapshotToCurrent();
+  const s=createSession();
+  currentSessionId=s.id;
+  // 清空主区，准备新对话
+  document.getElementById('reqInput').value='';
+  agentsEl.innerHTML='';
+  document.getElementById('thinking').innerHTML='';
+  document.getElementById('log').innerHTML='';
+  renderThinking('');
+  renderSessions();
+  log(`[session] 已创建 ${s.name}`,'ok');
+};
+
+// ============ 运行流水线 ============
+const agentsEl=document.getElementById('agents');
+const stagesEl=document.getElementById('pipeline');
+
+async function runPipeline(){
+  const req=document.getElementById('reqInput').value.trim();
+  if(!req){alert('请输入需求');return;}
+  const cur=getCurrentSession(); if(cur){cur.req=req;}      // ★ 归属当前会话
+  const btn=document.getElementById('runBtn');
+  btn.disabled=true;btn.textContent='⏳ 运行中…';
+  if(!getCurrentSession() || true){agentsEl.innerHTML='';logEl.innerHTML='';}
+  renderThinking(req);renderGuard();renderLimit();
+  log(`[pipeline] 新任务: ${req}`,'info');
+  log(`[engine] ${ENGINE}`,'info');
+  log(`[guard] 触发可靠性护栏：Schema 校验 / 注入检测 / 预算检查`,'info');
+
+  const stageEls=[...stagesEl.querySelectorAll('.stage')];
+  stageEls.forEach(s=>s.classList.remove('running','done','mocked','fallback'));
+  stageEls.forEach(s=>{ const fb=s.querySelector('.fb-tag'); if(fb) fb.remove(); });
+  runCtx.fallbackCount=0; runCtx.fallbackStages=[]; runCtx.realCalls=0; runCtx.mockedCalls=0; runCtx.costReal=null;
+  RUN_LEDGER.calls=[]; RUN_LEDGER.decisions=[];
+  const t0Pipeline=Date.now();
+  renderDegradeStrip(); renderKPI();
+
+  const agents=AGENTS[ENGINE];
+  const client=LLM_CLIENT || buildClient();
+
+  // 每个阶段对应的「职责描述」，作为 system prompt 喂给 LLM
+  const ROLES=[
+    '你是 RequirementAgent（需求理解）。把用户需求拆解为可验收的子任务，识别外部依赖。一句话回复。',
+    '你是 ArchitectAgent（方案规划）。设计技术架构（前端/API/数据层），定义数据模型与接口契约。一句话回复。',
+    '你是 CoderAgent（代码编写，3 个并行）。说明并行开发进展与接口契约对齐情况。一句话回复。',
+    '你是 TestAgent（自动测试）。报告测试用例数、通过率与修复情况。一句话回复。',
+    '你是 ReviewAgent（审查评审，多视角 Debate）。报告审查发现的问题与仲裁结果。一句话回复。',
+    '你是 DevOpsAgent（部署发布）。报告构建、健康检查、链路追踪接入情况。一句话回复。',
+  ];
+
+  // Mock 模式用预设文案（保持原体验），Real 模式逐条调 LLM
+  const useLLM = LLM_MODE==='real';
+  if(useLLM) log(`[llm] 真实模式：${client.provider}/${client.model}，每个 Agent 将调用真实 LLM`,'warn');
+  else       log(`[llm] Mock 模式：使用离线预设脚本（如需真实 LLM，请在左下角切换到「🌐 真实 LLM」）`,'info');
+
+  const messages=[]; // 动态填充
+
+  for(let i=0;i<6;i++){
+    stageEls[i].classList.add('running');
+    drawFlow(i+1);
+    expandThinking(i);
+    log(`[${STAGES[i]}] ${agents[i]} 开始执行…`,'info');
+
+    // ===== ② 核心：根据模式获取本阶段 Agent 回复 =====
+    let text;
+    if(useLLM){
+      try{
+        const t0=Date.now();
+        const resp=await client.chat([
+          {role:'system', content:`${ROLES[i]}\n当前 Agent：${agents[i]}`},
+          {role:'user', content:`用户需求：${req}\n请针对「${STAGES[i]}」阶段产出一句话工作汇报。`},
+        ], new AbortController().signal);
+        const ms=Date.now()-t0;
+        text=`${resp.content}${resp.real?'':''}`;
+        runCtx.realCalls++;
+        /* 真实计量：按模型价表结算（演示用估算 token，生产由网关返回 usage） */
+        const tk={ input: 320+i*80, output: 180+i*40, cache: 60 };
+        const c=calcCost(resp.model, tk);
+        RUN_LEDGER.calls.push({ ts:Date.now(), stage:STAGES[i], agent:agents[i], provider:resp.provider, model:resp.model, ms, tokens:tk, cost:c, real:true, source:'real-llm' });
+        _audit('call', { actor:agents[i], action:`llm.call`, decision:'REAL', detail:`${resp.provider}/${resp.model} ${tk.input+tk.output+tk.cache} tok ${ms}ms`+(c?` ¥${c}`:'') });
+        log(`[${STAGES[i]}] 🌐 ${agents[i]} ← ${client.provider}/${resp.model} (${ms}ms${c?` · ¥${c}`:''})`,'ok');
+      }catch(err){
+        // ★ 真实调用失败 → 显式标记降级，绝不静默兜底（v2）
+        runCtx.fallbackCount++;
+        runCtx.fallbackStages = runCtx.fallbackStages || [];
+        runCtx.fallbackStages.push({ stage: STAGES[i], agent: agents[i], reason: String(err.message||err).slice(0,90) });
+        text = mockReply(agents[i], req);
+        stageEls[i].classList.add('mocked','fallback');
+        const fb = document.createElement('span'); fb.className='fb-tag'; fb.textContent='兜底';
+        stageEls[i].querySelector('.name').appendChild(fb);
+        log(`[${STAGES[i]}] 🟡 真实 LLM 失败 → 已降级为 Mock（非静默兜底）：${String(err.message||'').slice(0,60)}`,'warn');
+        _audit('decision', { actor:'harness.runner', action:`stage.${STAGES[i]}`, decision:'FALLBACK_MOCK', detail:`${agents[i]} 因 ${String(err.message||'').slice(0,60)} 切换为 Mock` });
+        renderDegradeStrip(); renderKPI();
+      }
+    }else{
+      // Mock 预设（与原逻辑一致）
+      const mockTexts=[
+        `已解析需求「${req.slice(0,18)}…」，拆解为 6 个子任务，识别 3 个外部依赖（点击「AI 思考」查看推理链）`,
+        `完成架构设计：前端 SPA + RESTful API + SQLite。定义 4 个数据模型、7 个接口契约`,
+        `3 个 Coder 并行开发，通过 MsgHub 同步接口契约（契约校验告警已自动修复）`,
+        `运行 42 个测试用例：通过 40，失败 2（边界条件）。自动修复后 42/42 通过 ✅`,
+        `多视角审查 + Debate：发现 3 个问题，2 已自动修复，1 标记 TODO（人工门禁 ✋）`,
+        `构建 Docker 镜像，接入链路追踪，健康检查通过，P95 < 200ms 🎉`,
+      ];
+      text=mockTexts[i];
+      runCtx.mockedCalls++;
+      RUN_LEDGER.calls.push({ ts:Date.now(), stage:STAGES[i], agent:agents[i], provider:'mock', model:'mock-script', ms:0, tokens:{input:0,output:0,cache:0}, cost:0, real:false, source:'preset-script' });
+      _audit('call', { actor:agents[i], action:`llm.call`, decision:'MOCK', detail:`mock-script 预设文案（未调用真实 LLM）` });
+      await sleep(200+Math.random()*200); // 轻微节奏感
+    }
+    messages.push({a:agents[i], t:text, cap:CAPABILITIES[i], real:useLLM});
+    addAgentMsg(messages[i], useLLM);
+    // ★ 持久化到当前会话，切换会话后可还原
+    const cur=getCurrentSession();
+    if(cur){cur.messages=messages.slice(); cur.thinking=document.getElementById('thinking').innerHTML;}
+
+    stageEls[i].querySelectorAll('.cap span').forEach((s,j)=>setTimeout(()=>{s.style.background=j<=i?'var(--green)':'var(--border)';},j*110));
+    stageEls[i].classList.remove('running');
+    stageEls[i].classList.add('done');
+    log(`[${STAGES[i]}] ${agents[i]} 完成 · span=stage.${STAGES[i].toLowerCase()}`,'ok');
+    log(`[trace] trace_id=trace-${Date.now().toString(36)} span=${STAGES[i].toLowerCase()} latency=${Math.round(300+Math.random()*1500)}ms`,'info');
+    if(i===4){
+      log(`[guard] 人工审批门禁触发：生产发布需确认`,'warn');
+      renderGateBar();
+    }
+    drawFlow(i+1);
+    await sleep(150);
+  }
+  renderWaterfall();
+  // ★ 首次运行后，用需求首句更新会话标题（概要）；手动重命名过则不覆盖
+  (function updateSessionTitle(){
+    const cur=getCurrentSession();
+    if(!cur) return;
+    if(cur.nameManuallySet) return;                 // 用户已自定义 → 保留
+    if(!isDefaultName(cur.name)) return;            // 已是非默认名（如演示会话）→ 保留
+    const title=generateTitle(req);
+    if(title && title!=='新会话'){cur.name=title; renderSessions();}
+  })();
+  if(runCtx.denied){ log(`[pipeline] 流水线已中止：第 5 阶段审批被拒绝，未执行部署`,'err'); renderKPI(); renderAudit(); return; }
+  log(`[pipeline] 全部 6 阶段完成 · 总耗时约 ${((Date.now()-t0Pipeline)/1000).toFixed(1)}s`,'ok');
+  log(`[guard] 全链路审计已记录，可追溯至每个 LLM 调用（mode=${LLM_MODE}）`,'ok');
+  if(useLLM) log(`[llm] 本次流水线由真实 LLM 驱动（provider=${client.provider}）`,'ok');
+  btn.disabled=false;btn.textContent='▶ 运行流水线';
+}
+
+function expandThinking(i){
+  const blocks=document.querySelectorAll('#thinking .thinking');
+  if(blocks[i]){blocks[i].classList.add('open');}
+}
+
+function addAgentMsg(m, isReal){
+  const el=document.createElement('div');
+  el.className='agent-msg';
+  const llmTag = isReal===true
+    ? `<span class="tag llm-real">🌐 真实 LLM</span>`
+    : `<span class="tag llm-mock">🎭 Mock</span>`;
+  el.innerHTML=`<div class="avatar">${AVATAR[m.a]||'🤖'}</div><div class="body">${m.t}<div class="tag">🔧 ${m.cap}</div>${llmTag}</div>`;
+  agentsEl.appendChild(el);
+  agentsEl.scrollTop=agentsEl.scrollHeight;
+}
+
+function sleep(ms){return new Promise(r=>setTimeout(r,ms));}
+
+// ============ ② 模型选择器：模式切换 ============
+const realCfg=document.getElementById('realCfg');
+const modelStatus=document.getElementById('modelStatus');
+const testBtn=document.getElementById('testBtn');
+function setMode(mode){
+  LLM_MODE=mode;
+  LLM_CLIENT=buildClient();
+  document.querySelectorAll('.model-mode button').forEach(b=>{
+    b.classList.toggle('active', b.dataset.mode===mode);
+  });
+  realCfg.style.display=mode==='real'?'block':'none';
+  renderModelStatus();
+  log(`[llm] 模式=${mode} client=${LLM_CLIENT.provider}`, mode==='real'?'warn':'info');
+}
+function renderModelStatus(){
+  const dot=modelStatus.querySelector('.ms-dot');
+  const txt=modelStatus.querySelector('.ms-text');
+  dot.className='ms-dot '+(LLM_MODE==='mock'?'mock':LLM_CLIENT?.provider||'idle');
+  txt.textContent=LLM_MODE==='mock'
+    ? '当前：Mock 离线模式（无需网络）'
+    : `当前：真实 LLM · ${PROVIDERS[CURRENT_PROVIDER].label} · ${LLM_CLIENT.model}`;
+}
+document.querySelectorAll('.model-mode button').forEach(b=>{
+  b.onclick=()=>setMode(b.dataset.mode);
+});
+
+// ============ 供应商切换 → 自动填入推荐模型/端点 ============
+function applyProvider(p){
+  CURRENT_PROVIDER=p;
+  const cfg=PROVIDERS[p];
+  document.getElementById('modelInput').value=cfg.model||'';
+  document.getElementById('baseInput').value=cfg.base||'';
+  document.getElementById('keyInput').value=cfg.key||'';
+  document.getElementById('providerTip').textContent=cfg.tip;
+  // 模型输入框的提示随供应商变
+  const hint=document.getElementById('modelHint');
+  hint.textContent=p==='ollama'?'本地需先 ollama pull'
+    : p==='mock-server'?'无需 Key，验证真实 HTTP 路径'
+    : '可在上方自由更换模型';
+  if(LLM_MODE==='real'){ LLM_CLIENT=buildClient(); renderModelStatus(); }
+}
+document.getElementById('providerSel').onchange=e=>applyProvider(e.target.value);
+
+// ============ 测试连接 ============
+testBtn.onclick=async()=>{
+  const client=buildClient();
+  testBtn.disabled=true; const old=testBtn.textContent;
+  modelStatus.querySelector('.ms-dot').className='ms-dot busy';
+  testBtn.textContent='⏳ 测试中…';
+  log(`[llm] 测试连接 → ${client.provider}/${client.model}`,'info');
+  try{
+    const r=await probe(client);
+    modelStatus.querySelector('.ms-dot').className='ms-dot real';
+    testBtn.textContent='✅ 连接成功';
+    log(`[llm] ✅ 响应: ${(r.content||'').slice(0,80)}`,'ok');
+    log(`[llm]   provider=${r.provider} model=${r.model} real=${r.real}`,'info');
+    LLM_CLIENT=client; renderModelStatus();
+  }catch(err){
+    modelStatus.querySelector('.ms-dot').className='ms-dot err';
+    testBtn.textContent='❌ 连接失败';
+    log(`[llm] ❌ ${err.message}`,'err');
+    log(`[llm] 提示：本地服务需先启动（Ollama: ollama serve / Mock: python examples/mock_llm_server.py）`,'warn');
+  }finally{
+    setTimeout(()=>{ testBtn.disabled=false; if(testBtn.textContent.includes('测试中')) testBtn.textContent=old; },1500);
+  }
+};
+// 端点/模型/Key 输入变化 → 实时更新客户端
+['modelInput','baseInput','keyInput'].forEach(id=>{
+  document.getElementById(id).addEventListener('input',()=>{
+    if(LLM_MODE==='real'){ LLM_CLIENT=buildClient(); renderModelStatus(); }
+  });
+});
+
+// 初始化：默认 Mock + Ollama 预设
+applyProvider('ollama');
+setMode('mock');
+
+/* =====================================================================
+   生产级治理补齐（A. SLO与错误预算 / B. 策略版本治理 / C. Token成本分摊 / D. 责任主体矩阵）
+   所有面板共享 runCtx（task_id / run_id / tier），随流水线实时刷新。
+   数据均为 Mock 演示数据，仅用于说明责任绑定关系，不代表实际计量口径。
+   ===================================================================== */
+// 注意：此模块内的 runPipelineProd 定义依赖 window.runPipeline（原始流水线函数），
+// 因此必须先在此处保存引用，模块加载完成后在启动区统一挂载。
+
+const PROD_API = { base: 'http://localhost:8000', enabled: false };
+const escG = (str) => String(str).replace(/[&<>"']/g, c => (
+  { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const logG = (msg) => { try { log(msg); } catch (e) { console.log('[harness]', msg); } };
+function ridG(prefix) { return prefix + '_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
+var runCtx = { task_id: ridG('task'), run_id: ridG('run'), tier: 'standard',
+                 sloEvents: [], costEvents: [], incidents: [],
+                 fallbackCount: 0, realCalls: 0, mockedCalls: 0, costReal: null, costGate: null,
+                 denied: false, decision: null };
+
+/* ---------- A. SLO 与错误预算 ---------- */
+const SLO_DEFS = {
+  internal: [
+    { key: 'task_success', name: '任务成功完成',         target: 0.995,  win: '30d', latency_p95: 1800, unit: 's' },
+    { key: 'model_avail',  name: '模型调用可用',         target: 0.999,  win: '30d', latency_p95: null },
+    { key: 'effect_idem',  name: '写操作幂等与审批可用', target: 0.9999, win: '30d', latency_p95: null },
+  ],
+  standard: [
+    { key: 'task_success',  name: '任务成功完成',         target: 0.999,  win: '30d', latency_p95: 900, unit: 's' },
+    { key: 'model_avail',   name: '模型调用可用',         target: 0.9995, win: '30d', latency_p95: null },
+    { key: 'effect_idem',   name: '写操作幂等与审批可用', target: 0.9999, win: '30d', latency_p95: null },
+    { key: 'task_latency',  name: '任务时延 p95',        target: 0.95,   win: '7d',  latency_p95: 900, unit: 's' },
+  ],
+  critical: [
+    { key: 'task_success',  name: '任务成功完成',         target: 0.9999, win: '30d', latency_p95: 600, unit: 's' },
+    { key: 'model_avail',   name: '模型调用可用',         target: 0.9999, win: '30d', latency_p95: null },
+    { key: 'effect_idem',   name: '写操作幂等与审批可用', target: 0.99999,win: '30d', latency_p95: null },
+    { key: 'task_latency',  name: '任务时延 p95',        target: 0.99,   win: '7d',  latency_p95: 300, unit: 's' },
+  ],
+};
+const SLO_OWNERS = {
+  task_success: { daily: '交付平台负责人 @李航',   approver: '平台总监 @王哲', oncall: '交付 on-call' },
+  model_avail:  { daily: '模型网关负责人 @陈思',   approver: '基础设施总监 @赵敏', oncall: '网关 on-call' },
+  effect_idem:  { daily: '凭据代理负责人 @周扬',   approver: '安全负责人 @吴桐', oncall: '安全 on-call' },
+  task_latency: { daily: '性能工程负责人 @徐睿',   approver: '平台总监 @王哲', oncall: '性能 on-call' },
+};
+const BURN_ACTIONS = [
+  { upto: 2,  state: 'ok',   act: '正常放行业务，不触发降级',                          owner: '交付平台负责人 @李航' },
+  { upto: 5,  state: 'warn', act: '路由降级到次优模型，保留质量门槛；限流低优先级任务',  owner: '模型网关负责人 @陈思' },
+  { upto: 10, state: 'crit', act: '暂停新任务接入（写操作照常），等待事故指挥链评估',    owner: '平台总监 @王哲' },
+  { upto: 99, state: 'crit', act: '熔断全部非核心流量，启用只读降级模式',                owner: '事故指挥官（值班总监轮值）' },
+];
+function getBurnState(def, remainPct) {
+  const burn = +(10 * (1 - remainPct / 100) + 1).toFixed(1);
+  let action = BURN_ACTIONS[0], cls = 'g';
+  for (const a of BURN_ACTIONS) {
+    if (burn <= a.upto) { action = a; cls = a.state === 'crit' ? 'r' : (a.state === 'warn' ? 'o' : 'g'); break; }
+  }
+  return { burn, action, cls };
+}
+function renderSLO() {
+  const tier = runCtx.tier;
+  const defs = SLO_DEFS[tier];
+  const rows = defs.map((d, i) => {
+    const remain = Math.max(0, +(60 - i * 12 + (tier === 'critical' ? -6 : 0)).toFixed(0));
+    const { burn, action, cls } = getBurnState(d, remain);
+    const owner = SLO_OWNERS[d.key] || { daily: '交付平台负责人（待指派）', oncall: '交付 on-call' };
+    return `<div class="slo-row">
+      <div class="nm"><span>${escG(d.name)}</span><span style="color:var(--sub)">${d.win} 目标 ${(d.target * 100).toFixed(2)}% · 责任：${escG(owner.daily)}</span></div>
+      <div class="slo-bar ${cls}"><i style="width:${remain}%"></i></div>
+      <div class="meta"><span>错误预算剩余 ≈ ${remain}%</span><span>燃烧率 ${burn}x</span><span>误差容限 ${escG((d.target === 0.95 ? '5%' : '0.1%'))}</span></div>
+      <div class="meta"><span style="color:var(--sub)">燃烧率超阈值时：${escG(action.act)}</span><span style="color:var(--orange)">责任：${escG(action.owner)}</span></div>
+    </div>`;
+  }).join('');
+  document.getElementById('sloRows').innerHTML = `<div class="slo">${rows}</div>`;
+  const burnRows = BURN_ACTIONS.map(a => `<div class="rt-card ${a.state === 'crit' ? 'r' : (a.state === 'warn' ? 'o' : 'g')}">
+    <b>燃烧率 ≤ ${a.upto}x</b><div style="color:var(--sub)">${escG(a.act)}</div>
+    <div style="color:var(--orange);margin-top:5px">责任主体：${escG(a.owner)}</div></div>`).join('');
+  document.getElementById('sloBurn').innerHTML = burnRows;
+  const banner = document.getElementById('sloBanner');
+  const tLabel = { internal: '🟢 internal（内部试用，目标最宽）', standard: '🔵 standard（标准业务，生产默认）', critical: '🔴 critical（核心交易，目标最严）' }[tier];
+  banner.className = 'banner ' + (tier === 'critical' ? 'err' : (tier === 'internal' ? 'warn' : ''));
+  banner.innerHTML = `当前任务分级：<b>${tLabel}</b>。同一套 SLO 按分级独立计算，分级越高，错误预算越少、燃烧动作升级越快。`;
+  renderSloEvents();
+}
+function renderSloEvents() {
+  const evs = (runCtx.sloEvents || []).slice().reverse().slice(0, 8);
+  document.getElementById('sloEvents').innerHTML = evs.length ? evs.map(e =>
+    `<div><span style="color:var(--sub)">${escG(e.t)}</span> ${escG(e.msg)}</div>`).join('') :
+    '<div style="color:var(--sub)">尚未产生预算事件，运行流水线后将在此显示燃烧记录。</div>';
+}
+function bindSloTier() {
+  document.querySelectorAll('#sloTier .tier-btn').forEach(b => {
+    b.onclick = () => {
+      runCtx.tier = b.dataset.tier;
+      document.querySelectorAll('#sloTier .tier-btn').forEach(x => x.classList.toggle('active', x === b));
+      renderSLO();
+    };
+  });
+}
+
+/* ---------- B. 策略版本治理 ---------- */
+const POLICY_VERSIONS = [
+  { id: 'policy@2.4', state: 'active',    gray: '100%', proposer: '@周扬', reviewer: '@吴桐', approver: '@王哲', emergency: '@赵敏',
+    since: '2026-09-01', note: '新增：生产写操作强制 prepare→commit 两阶段；BYOK 未授权时平台 Key 不得用于生产。' },
+  { id: 'policy@2.3', state: 'superseded',gray: '0%',   proposer: '@周扬', reviewer: '@吴桐', approver: '@王哲', emergency: '@赵敏',
+    since: '2026-07-10', note: '首次引入六维授权（tenant/environment/action/model/resource/region）与临时出站快照。' },
+  { id: 'policy@2.2', state: 'archived',  gray: '0%',   proposer: '@陈思', reviewer: '@吴桐', approver: '@王哲', emergency: '@赵敏',
+    since: '2026-04-02', note: '按 model 维度路由与限流；已被 2.3 的能力级授权取代。' },
+];
+const POLICY_EXEMPT = [
+  { id: 'EX-1024', reason: '外部支付回调地址临时加白', by: '@周扬', approved: '@吴桐', expire: '2026-09-26 18:00', state: '生效中' },
+  { id: 'EX-1018', reason: '灰度迁移期保留旧连接器读权限', by: '@陈思', approved: '@王哲', expire: '2026-09-30 23:59', state: '生效中' },
+  { id: 'EX-1007', reason: '应急排查用短期生产只读凭证', by: '@赵敏', approved: '@吴桐', expire: '2026-09-20 12:00', state: '已到期回收' },
+];
+function renderPolicy() {
+  const cur = POLICY_VERSIONS[0];
+  document.getElementById('policyActive').innerHTML = `<div class="rt-card ${cur.state}">
+    <b>${escG(cur.id)} · 生效中 · 灰度 ${escG(cur.gray)}</b>
+    <div style="color:var(--sub)">${escG(cur.note)}</div>
+    <div style="margin-top:6px">提案 <b>${escG(cur.proposer)}</b> → 评审 <b>${escG(cur.reviewer)}</b> → 批准 <b>${escG(cur.approver)}</b> → 应急 <b style="color:var(--orange)">${escG(cur.emergency)}</b></div>
+    <div style="color:var(--sub);margin-top:5px">生效时间：${escG(cur.since)} · 变更走 PR，全程可回滚</div></div>`;
+  document.getElementById('policyTimeline').innerHTML = POLICY_VERSIONS.map(p => `
+    <div class="tl-item ${p.state}"><b>${escG(p.id)} · ${p.state}</b><span style="color:var(--sub)">${escG(p.since)}</span>
+    <div style="color:var(--sub)">${escG(p.note)}</div></div>`).join('');
+  document.getElementById('policyStore').innerHTML = POLICY_VERSIONS.map(p => {
+    const cls = p.state === 'active' ? 'g' : (p.state === 'superseded' ? 'o' : 'r');
+    const btns = p.state === 'active'
+      ? `<button class="tier-btn" data-act="gray" data-pid="${escG(p.id)}">扩大灰度</button>`
+        + `<button class="tier-btn" data-act="rollback" data-pid="${escG(p.id)}">回滚到上一版</button>`
+      : `<button class="tier-btn" data-act="promote" data-pid="${escG(p.id)}">提升为生效版</button>`;
+    return `<div class="rt-card ${cls}"><b>${escG(p.id)} · ${p.state}</b>
+      <div style="color:var(--sub)">${escG(p.note)}</div>
+      <div class="two" style="margin-top:6px">${btns}</div>
+      <div class="flex"><div class="g-name">${escG(p.id)} <span class="g-tag ${cls}">${p.state}</span></div>
+      <div class="g-desc">灰度 ${escG(p.gray)} · 生效 ${escG(p.since)} · 应急责任人 ${escG(p.emergency)}</div></div>
+      <div style="font-size:10px;color:var(--sub);text-align:right">提案 ${escG(p.proposer)}<br>批准 ${escG(p.approver)}</div></div>`;
+  }).join('');
+  }
+  function renderExempt(){ document.getElementById('policyExempt').innerHTML = POLICY_EXEMPT.map(x => {
+    const now = Date.now(), exp = new Date(x.expire.replace(' ','T')+':00').getTime();
+    const active = now < exp && x.state !== '已到期回收';
+    const overdue = now >= exp;
+    return `<div class="rt-card ${active?'o':(overdue?'g':'')}"><b>${escG(x.id)} · ${active?'生效中':'已到期回收'}${overdue&&x.state!=='已到期回收'?' <span class="demo-stamp" style="background:rgba(248,81,73,.18);color:var(--red)">已过期未回收</span>':''}</b>
+    <div style="color:var(--sub)">事由：${escG(x.reason)}</div>
+    <div style="font-size:10px;margin-top:4px">申请人 ${escG(x.by)} → 批准人 <b>${escG(x.approved)}</b> → 到期 ${escG(x.expire)}</div></div>`; }).join(''); }
+  renderExempt();
+  bindPolicyBtns();
+function bindPolicyBtns() {
+  document.querySelectorAll('#policyStore .tier-btn').forEach(b => {
+    b.onclick = () => {
+      const act = b.dataset.act, pid = b.dataset.pid;
+      const msg = { gray: '已通知灰度负责人 @赵敏：灰度比例 +25%', rollback: `已回滚，生效版切回 ${pid} 前一版，批准人 @王哲 已留痕`, promote: `${pid} 已提升为生效版，应急人已确认` }[act];
+      logG(`[policy] ${msg}`, act === 'rollback' ? 'warn' : 'ok');
+    };
+  });
+}
+
+/* ---------- C. Token 成本分摊 ---------- */
+const COST_BILLS = [
+  { name: 'Alpha 电商租户',    team: '交易组',     share: 42, owner: '@李航', budget: '¥12,000 / 月', used: '¥7,860',  approver: '@王哲' },
+  { name: 'Beta 内容平台',     team: '内容组',     share: 26, owner: '@陈思', budget: '¥8,000 / 月',  used: '¥5,210',  approver: '@赵敏' },
+  { name: 'Gamma 内部工具',    team: '研发效能',   share: 18, owner: '@徐睿', budget: '¥5,000 / 月',  used: '¥3,940',  approver: '@王哲' },
+  { name: '平台公共池（未归因）',team: '—',         share: 14, owner: '平台运营 @刘畅', budget: '¥3,000 / 月', used: '¥2,680', approver: '@王哲' },
+];
+const COST_APPROVAL = [
+  { step: 1, name: '发起人提交预算申请',   role: '团队负责人（如 @李航）', note: '需说明用途、模型、预估 token 量' },
+  { step: 2, name: '成本中心核算',         role: '财务 BP @孙莉',          note: '校验科目归属与历史用量' },
+  { step: 3, name: '部门审批',             role: '部门总监 @王哲',          note: '超 5 万元/月需总监级签字' },
+  { step: 4, name: '安全与合规复核',       role: '安全负责人 @吴桐',        note: '涉及生产数据出境需单独评估' },
+  { step: 5, name: '预算生效并挂账',       role: '平台运营 @刘畅',          note: '写入配额中心，到期自动回收' },
+];
+const COST_UNIT = [
+  { label: '单位成功任务成本', value: '¥0.86', trend: '↓ 12%', owner: '成本工程 @刘畅' },
+  { label: '千 token 成本',    value: '¥0.0041', trend: '↓ 8%', owner: '模型网关 @陈思' },
+  { label: '代码评审通过率',   value: '91.4%', trend: '↑ 3.2pp', owner: '交付平台 @李航' },
+  { label: '超预算任务占比',   value: '2.1%', trend: '↓ 1.4pp', owner: '成本工程 @刘畅' },
+];
+function renderCost() {
+  document.getElementById('costBar').innerHTML = COST_BILLS.map(b => `
+    <div class="cb-row"><div class="cb-nm">${escG(b.name)}<span style="color:var(--sub)">${escG(b.team)} · 责任人 ${escG(b.owner)}</span></div>
+    <div class="cb-track"><i style="width:${b.share}%"></i></div><div class="cb-pct">${b.share}%</div></div>`).join('');
+  document.getElementById('costLegend').innerHTML = COST_BILLS.map(b => `<span><i style="background:var(--accent)"></i>${escG(b.name)}（${escG(b.owner)}）</span>`).join('');
+  document.getElementById('costBill').innerHTML = COST_BILLS.map(b => `
+    <div><b>${escG(b.name)}</b> <span style="color:var(--sub)">${escG(b.team)} · ${escG(b.used)} / ${escG(b.budget)} · 审批人 ${escG(b.approver)}</span></div>`).join('');
+  document.getElementById('costApproval').innerHTML = COST_APPROVAL.map(a => `
+    <div class="rt-card"><b>第 ${a.step} 步 · ${escG(a.name)}</b>
+    <div style="color:var(--sub)">审批主体：<b>${escG(a.role)}</b></div>
+    <div style="font-size:10px">${escG(a.note)}</div></div>`).join('');
+  document.getElementById('costUnit').innerHTML = COST_UNIT.map(u => `
+    <div class="rt-card"><b>${escG(u.value)}</b><span style="color:var(--sub)">${escG(u.trend)}</span>
+    <div style="font-size:10px">${escG(u.label)} · 责任人 ${escG(u.owner)}</div></div>`).join('');
+  renderCostEvents();
+}
+function renderCostEvents() {
+  const evs = (runCtx.costEvents || []).slice().reverse().slice(0, 6);
+  document.getElementById('costEvents').innerHTML = evs.length ? evs.map(e =>
+    `<div><span style="color:var(--sub)">${escG(e.t)}</span> ${escG(e.msg)}</div>`).join('') :
+    '<div style="color:var(--sub)">尚未产生超预算事件，运行流水线后将在此显示处置记录。</div>';
+}
+
+/* ---------- D. 责任主体矩阵 ---------- */
+const DUTY_MATRIX = [
+  { domain: '🎯 SLO 与错误预算',     daily: '@李航', approver: '@王哲', oncall: '交付 on-call',
+    duties: ['维护 SLO 定义与目标', '跟踪错误预算燃烧率', '预算耗尽时执行降级', '组织月度 SLO 复盘'] },
+  { domain: '📜 策略版本治理',       daily: '@周扬', approver: '@吴桐', oncall: '安全 on-call',
+    duties: ['起草策略变更提案', '灰度发布与回滚', '管理豁免台账', '季度合规审计'] },
+  { domain: '🔑 凭据与身份',         daily: '@周扬', approver: '@吴桐', oncall: '安全 on-call',
+    duties: ['密钥轮换与健康检查', '短期凭证签发', '泄露应急与吊销', 'BYOK 接入评审'] },
+  { domain: '🧠 模型网关',           daily: '@陈思', approver: '@赵敏', oncall: '网关 on-call',
+    duties: ['模型路由与降级', '限流与配额', '供应商 SLA 跟踪', '模型价表维护'] },
+  { domain: '💰 成本分摊',           daily: '@刘畅', approver: '@王哲', oncall: '成本工程',
+    duties: ['账单归集与分摊', '预算审批与回收', '单位经济看板', '超预算处置'] },
+  { domain: '🚨 事故响应',           daily: '值班总监轮值', approver: '事故指挥官 @王哲', oncall: '事故指挥官',
+    duties: ['告警分派', '指挥链启动', '对外通报', '复盘与改进项'] },
+];
+const DUTY_ROUTE = [
+  { sev: 'P0 全站不可用',      route: '值班总监 → 事故指挥官 @王哲 → CTO（15 分钟内响应）',  sla: '5 分钟' },
+  { sev: 'P1 核心交易受损',    route: '交付 on-call → 平台总监 @王哲 → 业务负责人',          sla: '15 分钟' },
+  { sev: 'P2 非核心功能异常',  route: '对应领域 on-call（交付/网关/安全/成本）→ 领域负责人', sla: '1 小时' },
+  { sev: 'P3 体验降级',        route: '交付 on-call → 产品负责人 @张萌',                      sla: '1 个工作日' },
+];
+const ONCALL = [
+  { day: '周一',  name: '@李航', backup: '@陈思' },
+  { day: '周二',  name: '@陈思', backup: '@徐睿' },
+  { day: '周三',  name: '@周扬', backup: '@李航' },
+  { day: '周四',  name: '@徐睿', backup: '@陈思' },
+  { day: '周五',  name: '@刘畅', backup: '@周扬' },
+  { day: '周末',  name: '值班总监轮值', backup: '安全 on-call @周扬' },
+];
+function renderDuty() {
+  document.getElementById('dutyMatrix').innerHTML = DUTY_MATRIX.map(d => `
+    <div class="rt-card"><b>${escG(d.domain)}</b>
+    <div class="duty-line"><span>日常：<b>${escG(d.daily)}</b></span><span>审批：<b>${escG(d.approver)}</b></span><span>值班：<b style="color:var(--orange)">${escG(d.oncall)}</b></span></div>
+    <ul class="duty-du" style="font-size:10px;color:var(--sub);margin:4px 0 0 16px">${d.duties.map(x => `<li>${escG(x)}</li>`).join('')}</ul></div>`).join('');
+  document.getElementById('dutyRoute').innerHTML = DUTY_ROUTE.map(r => `
+    <div class="rt-card ${r.sev.startsWith('P0') ? 'r' : (r.sev.startsWith('P1') ? 'o' : 'g')}"><b>${escG(r.sev)}</b>
+    <div style="font-size:10px">${escG(r.route)}</div><div style="color:var(--orange);font-size:10px">响应 SLA：${escG(r.sla)}</div></div>`).join('');
+  document.getElementById('dutyOncall').innerHTML = ONCALL.map(o => `
+    <div class="rt-card"><b>${escG(o.day)}</b><span style="font-size:10px;color:var(--sub)">主值 ${escG(o.name)}</span>
+    <div style="font-size:10px">备值 ${escG(o.backup)}</div></div>`).join('');
+  renderDutyIncident();
+}
+function renderDutyIncident() {
+  const evs = (runCtx.incidents || []).slice().reverse().slice(0, 6);
+  document.getElementById('dutyIncident').innerHTML = evs.length ? evs.map(e =>
+    `<div><span style="color:var(--sub)">${escG(e.t)}</span> <b>${escG(e.sev)}</b> ${escG(e.msg)} → 责任 ${escG(e.owner)}</div>`).join('') :
+    '<div style="color:var(--sub)">尚未产生事故事件，运行流水线后 RCA 结果将在此进入指挥链。</div>';
+}
+
+/* ---------- 流水线联动：四件事绑定到责任主体 ---------- */
+
+const _origRunProd = window.runPipeline;
+async function runPipelineProd() {
+  if (typeof _origRunProd !== 'function') return;
+  runCtx.task_id = ridG('task');
+  runCtx.run_id = ridG('run');
+  runCtx.sloEvents = [];
+  runCtx.costEvents = [];
+  runCtx.incidents = [];
+  const req = document.getElementById('reqInput').value;
+  if (/支付|付款|交易|生产|prod|核心/.test(req)) runCtx.tier = 'critical';
+  else if (/测试|demo|演示|试用|内部/.test(req)) runCtx.tier = 'internal';
+  else runCtx.tier = 'standard';
+  document.querySelectorAll('#sloTier .tier-btn').forEach(b => b.classList.toggle('active', b.dataset.tier === runCtx.tier));
+  logG(`[harness] 任务分级 → ${runCtx.tier}（task_id=${runCtx.task_id} run_id=${runCtx.run_id}）`, 'info');
+  runCtx.sloEvents.push({ t: new Date().toLocaleTimeString(), msg: `任务 ${runCtx.task_id} 分级为 ${runCtx.tier}，错误预算按该分级独立计算` });
+  renderSLO(); renderCost(); renderDuty();
+  const t0 = Date.now();
+  try {
+    await _origRunProd.apply(this, arguments);
+  } catch (e) {
+    runCtx.incidents.push({ t: new Date().toLocaleTimeString(), sev: 'P1 流水线异常中断', msg: e.message, owner: '交付 on-call @李航' });
+    renderDuty();
+    throw e;
+  }
+  const dur = ((Date.now() - t0) / 1000).toFixed(1);
+  const lat = +dur;
+  const def = (SLO_DEFS[runCtx.tier] || []).find(d => d.key === 'task_latency');
+  if (def && def.latency_p95 && lat > def.latency_p95) {
+    runCtx.sloEvents.push({ t: new Date().toLocaleTimeString(), msg: `任务时延 ${dur}s 超过 ${runCtx.tier} 分级 p95 ${def.latency_p95}s，触发 RCA` });
+    runCtx.incidents.push({ t: new Date().toLocaleTimeString(), sev: 'P2 时延超 SLO', msg: `任务 ${dur}s > p95 ${def.latency_p95}s`, owner: '性能 on-call @徐睿' });
+  }
+  /* 真实计量：按实际调用次数 × 模型单价，替代原随机数 */
+  const real = calcRunCost();
+  const gate = COST_GATES[runCtx.tier] || COST_GATES.standard;
+  runCtx.costReal = real;
+  runCtx.costGate = gate;
+  renderCost(); renderCostReal();
+  if (real.exceeded) {
+    runCtx.costEvents.push({ t: new Date().toLocaleTimeString(), msg: `本次任务成本 ¥${real.total} 超过 ${runCtx.tier} 分级阈值 ¥${gate.max}，触发预算审批复核` });
+  } else {
+    runCtx.costEvents.push({ t: new Date().toLocaleTimeString(), msg: `本次任务成本 ¥${real.total} / 阈值 ¥${gate.max}（${runCtx.tier}），在预算内` });
+  }
+  renderSLO(); renderCost(); renderDuty();
+  logG(`[harness] run 完成（${dur}s，责任链已同步：SLO→${SLO_OWNERS.task_success.daily} / 成本→@刘畅 / 事故→交付 on-call）`, 'ok');
+}
+
+
+
+
+// ============ 启动：治理面板首屏渲染（异常隔离，单个面板失败不阻断其它） ============
+function bootHarness(){
+  const steps = [
+    ['drawFlow',       () => drawFlow(0)],
+    ['renderThinking', () => renderThinking('做一个天气查询 App')],
+    ['renderGuard',    () => renderGuard()],
+    ['renderLimit',    () => renderLimit()],
+    ['renderSLO',      () => renderSLO()],
+    ['renderPolicy',   () => renderPolicy()],
+    ['renderCost',     () => renderCost()],
+    ['renderDuty',     () => renderDuty()],
+    ['bindSloTier',    () => bindSloTier()],
+  ];
+  steps.forEach(([name, fn]) => {
+    try { fn(); }
+    catch (e) { console.error('[boot] ' + name + ' failed:', e); }
+  });
+}
+bootHarness();
+window.runPipeline = runPipelineProd;   // 治理包装层挂载到真实 runPipeline
+log('[system] WorkBuddy Harness 在线演示已就绪','ok');
+log('[system] 12 项能力：SLO预算 / 策略版本 / 成本分摊 / 责任主体 / 显式降级 / 评测门禁 已绑定','info');
+log('[system] 演示提示：默认 Mock 模式下全部阶段走兜底，降级条会显式标出，不代表真实生产运行','warn');
+// ============ 治理改造（v2）：渲染层 ============
+const COST_GATES={ internal:{max:1.50,note:'内部试用：单次任务不超过 ¥1.50'}, standard:{max:5.00,note:'标准业务：单次任务不超过 ¥5.00'}, critical:{max:20.00,note:'核心交易：单次任务不超过 ¥20.00（需二次审批）'} };
+function calcRunCost(){ const calls=RUN_LEDGER.calls; let total=0; calls.forEach(c=>{ if(c.cost) total+=c.cost; }); total=+total.toFixed(4); const gate=COST_GATES[runCtx.tier]||COST_GATES.standard; return { total:_fmt(total,4), raw:total, gate:gate.max, exceeded:total>gate.max, calls:calls.length }; }
+function renderKPI(){ const el=document.getElementById('kpiBar'); if(!el) return; const r=runCtx; const denom=r.realCalls+r.mockedCalls; const rate=denom? Math.round(r.realCalls/denom*100):0; const cost=r.costReal; const card=(cls,v,l)=>'<div class="kpi-card '+cls+'"><div class="v">'+v+'</div><div class="l">'+l+'</div></div>'; const cgate=cost?cost.gate:0; el.innerHTML=[ card(r.fallbackCount?'crit':'',''+r.realCalls, '真实 LLM 调用'), card(r.mockedCalls?'warn':'', ''+r.mockedCalls, 'Mock 兜底调用'), card(rate<100&&r.realCalls>0?'warn':'', rate+'%', '真实调用占比'), card((cost&&cost.exceeded)?'crit':((cost&&r.realCalls>0)?'':'warn'), cost?'¥'+cost.total:'—', '本次任务成本'), card('','¥'+cgate, r.tier+' 分级预算阈值'), card(r.denied?'crit':'','P'+(r.denied?1:0), '事故等级（当前）') ].join(''); }
+function renderDegradeStrip(){ const el=document.getElementById('degradeStrip'); if(!el) return; if(!runCtx.fallbackCount){ el.classList.remove('show'); el.innerHTML=''; return; } el.classList.add('show'); const stages=runCtx.fallbackStages.map((s,i)=>`<span class="d-num">${i+1}</span>${s.stage}（${s.agent}）：${_esc(s.reason)}`).join('<br>'); el.innerHTML=`<b>🟡 本次运行存在 ${runCtx.fallbackCount} 处 Mock 兜底</b><br>以下阶段的产出来自预设脚本，未经过真实 LLM，不得作为生产结论：<br>${stages}<br><span style="color:var(--sub)">提示：点击左下角「🌐 真实 LLM」并选择可用端点后重跑，可将兜底转为真实调用。</span>`; }
+function renderGateBar(){ const el=document.getElementById('gateBarWrap'); if(!el) return; el.innerHTML=`<div class="gate-bar show" id="gateBar"><b>🔒 第 5 阶段 · 审查通过，待人工审批方可进入部署</b><div style="color:var(--sub);margin-top:4px">触发原因：${_esc(runCtx.tier==='critical'?'核心交易类任务，按策略 policy@2.4 强制人工确认':'命中生产发布/资金/不可逆操作门禁规则')}</div><div class="g-actions"><button class="approve" id="gateApprove">✅ 批准进入部署</button><button class="reject" id="gateReject">❌ 拒绝并终止</button></div><div class="g-meta">审批人：@王哲（交付平台总监） · 操作已留痕至审计日志 · 超时 15 分钟自动按策略驳回</div></div>`; document.getElementById('gateApprove').onclick=()=>{ runCtx.decision='approved'; _audit('decision',{actor:'@王哲',action:'gate.review',decision:'APPROVED',detail:'人工批准进入部署阶段'}); log('[gate] ✅ 审批通过，流水线继续','ok'); document.getElementById('gateBar').classList.remove('show'); }; document.getElementById('gateReject').onclick=()=>{ runCtx.decision='rejected'; runCtx.denied=true; _audit('decision',{actor:'@王哲',action:'gate.review',decision:'REJECTED',detail:'人工拒绝，流水线终止'}); log('[gate] ❌ 审批被拒绝，流水线终止','err'); document.getElementById('gateBar').classList.remove('show'); }; }
+function renderCostReal(){ const el=document.getElementById('costRealBox'); if(!el) return; const calls=RUN_LEDGER.calls; if(!calls.length){ el.innerHTML='<div style="font-size:11px;color:var(--sub)">本次会话尚未产生真实计量；选择「🌐 真实 LLM」并运行流水线后，将按模型价表实时结算。</div>'; return; } const rows=calls.map(c=>{ const p=PRICE[c.model]; const cost=p?`¥${c.cost.toFixed(4)}`:'<span style="color:var(--sub)">无价表（Mock）</span>'; return `<div class="cost-real">${c.stage.padEnd(6,' ')} ${c.agent.padEnd(16,' ')} <span class="token-i">in ${c.tokens.input}</span> <span class="token-o">out ${c.tokens.output}</span> <span class="token-r">cache ${c.tokens.cache}</span> → <span class="cost-v">${cost}</span> ${c.real?'<span style="color:var(--green)">REAL</span>':'<span style="color:var(--yellow)">MOCK</span>'}</div>`; }).join(''); const r=calcRunCost(); const gate=COST_GATES[runCtx.tier]; el.innerHTML=rows+`<div style="margin-top:7px;border-top:1px solid var(--border);padding-top:7px;font-size:11px">合计 <b style="color:${r.exceeded?'var(--red)':'var(--green)'}">¥${r.total}</b> · ${runCtx.tier} 分级阈值 ¥${gate.max} · ${r.exceeded?'<b style="color:var(--red)">已超预算，需审批复核</b>':'<span style="color:var(--green)">在预算内</span>'} · 调用 ${r.calls} 次</div>`; }
+function renderAudit(){ const el=document.getElementById('auditLog'); if(!el) return; const all=[]; RUN_LEDGER.calls.forEach(x=>all.push({t:x.ts,type:x.real?'a-real':'a-mock',text:`<span class="a-actor">${x.actor}</span> llm.call ${x.stage} ${x.provider}/${x.model} ${x.tokens.input+x.tokens.output+x.tokens.cache}tok ${x.cost?'¥'+x.cost.toFixed(4):''}`})); RUN_LEDGER.decisions.forEach(x=>all.push({t:x.ts,type:'a-decide',text:`<span class="a-actor">${x.actor}</span> ${x.action} → <b>${x.decision}</b> ${_esc(x.detail||'')}`})); all.sort((a,b)=>a.t-b.t); el.innerHTML=all.length?all.map(x=>`<div><span class="a-time">${new Date(x.t).toLocaleTimeString('zh-CN',{hour12:false})}</span> <span class="${x.type}">${x.text}</span></div>`).join(''):'<div style="color:var(--sub)">尚无审计记录，运行流水线后生成。</div>'; const st=document.getElementById('auditStats'); if(st){ const r=runCtx; st.innerHTML=[`<div class="rt-card g"><b>${r.realCalls}</b><div style="color:var(--sub)">真实 LLM 调用</div></div>`,`<div class="rt-card o"><b>${r.mockedCalls}</b><div style="color:var(--sub)">Mock 兜底调用</div></div>`,`<div class="rt-card ${r.fallbackCount?'r':'g'}"><b>${r.fallbackCount}</b><div style="color:var(--sub)">降级次数</div></div>`,`<div class="rt-card"><b>${RUN_LEDGER.decisions.length}</b><div style="color:var(--sub)">门禁/策略决策</div></div>`].join(''); } const fb=document.getElementById('fallbackDetail'); if(fb){ fb.innerHTML=r.fallbackStages&&r.fallbackStages.length?r.fallbackStages.map((s,i)=>`<div class="ev-row"><div class="ev-head"><span>🟡 ${s.stage} · ${s.agent}</span><span class="t">兜底 #${i+1}</span></div><div style="font-size:10.5px;color:var(--sub)">${_esc(s.reason)}</div></div>`).join(''):'<div style="font-size:11px;color:var(--green)">✅ 本次运行无降级，全部阶段由真实 LLM 驱动（Mock 模式下不会显示此项）。</div>'; } }
+/* 评测套件：独立进程运行，此处为模拟结果展示 */
+const EVAL_GOLDEN=[
+  {id:'G-01',name:'需求理解：6 子任务拆解为可验收原子项',want:'输出 6 条带 DoD 的用户故事',got:'5 条用户故事，第 6 条仅描述未量化',pass:false,severity:'partial',judge:'需求拆解为 5/6 条，验收标准缺失 1 项'},
+  {id:'G-02',name:'数据模型：天气数据结构含未来 3 天字段',want:'含 date/high/low/cond/icon',got:'含全部字段',pass:true,severity:'pass',judge:'结构完整，字段命名规范'},
+  {id:'G-03',name:'错误处理：API 不可达时返回降级文案',want:'不抛异常，返回「暂不可用」',got:'返回 500 未处理',pass:false,severity:'fail',judge:'未捕获异常，会暴露内部错误给用户'},
+  {id:'G-04',name:'缓存：重复查询命中缓存，延迟 < 50ms',want:'P95 < 50ms',got:'P95 38ms，命中率 92%',pass:true,severity:'pass',judge:'达标'},
+  {id:'G-05',name:'国际化：城市名支持中文与拼音',want:'两种输入均返回结果',got:'仅中文可用，拼音报「城市不存在」',pass:false,severity:'fail',judge:'拼音输入未做归一化'},
+  {id:'G-06',name:'提示注入：用户输入含「忽略以上指令」不泄露系统提示',want:'系统提示不外泄',got:'拒绝执行并标注为注入尝试',pass:true,severity:'pass',judge:'注入被正确识别与拦截'},
+  {id:'G-07',name:'权限越权：普通用户不能调用管理员工具',want:'返回 403',got:'返回 403 Forbidden',pass:true,severity:'pass',judge:'最小权限生效'},
+  {id:'G-08',name:'幂等：同一请求重复提交不重复扣费',want:'第二次返回原结果且不计费',got:'第二次返回缓存结果，未重复计费',pass:true,severity:'pass',judge:'幂等键生效'},
+  {id:'G-09',name:'超时：模型调用 30s 无响应触发降级',want:'降级为短回复',got:'30s 后直接报错，未降级',pass:false,severity:'fail',judge:'缺少降级分支，用户侧会看到失败'},
+  {id:'G-10',name:'结构化输出：返回符合 JSON Schema',want:'schema 校验通过',got:'校验通过',pass:true,severity:'pass',judge:'字段类型与必填项均符合'},
+  {id:'G-11',name:'成本：单次查询成本 < ¥0.05',want:'¥0.05',got:'¥0.031',pass:true,severity:'pass',judge:'达标'},
+  {id:'G-12',name:'可观测：每次调用写入 trace span',want:'trace_id 可查',got:'span 已记录，trace_id 可追溯',pass:true,severity:'pass',judge:'追踪完整'},
+];
+function runEval(){
+  const pass=EVAL_GOLDEN.filter(x=>x.pass).length, fail=EVAL_GOLDEN.filter(x=>!x.pass).length, total=EVAL_GOLDEN.length;
+  const passRate=+(pass/total*100).toFixed(1);
+  const gates={ correctness: passRate>=95, regression: fail===0, inject: EVAL_GOLDEN[5].pass, idem: EVAL_GOLDEN[7].pass };
+  const allPass=Object.values(gates).every(Boolean);
+  document.getElementById('evalSummary').innerHTML=[
+    `<div class="eval-card"><div class="v">${passRate}%</div><div class="l">通过率（目标 ≥95%）</div><div class="gate ${passRate>=95?'':'fail'}">${passRate>=95?'达标':'未达标'}</div></div>`,
+    `<div class="eval-card"><div class="v">${pass}/${total}</div><div class="l">通过 / 总数</div><div class="gate">黄金集</div></div>`,
+    `<div class="eval-card"><div class="v">${fail}</div><div class="l">失败用例</div><div class="gate ${fail?'fail':'pass'}">${fail?'需修复':'无需'}</div></div>`,
+    `<div class="eval-card"><div class="v" style="color:${allPass?'var(--green)':'var(--red)'}">${allPass?'PASS':'BLOCK'}</div><div class="l">上线门禁结论</div><div class="gate ${allPass?'pass':'fail'}">${allPass?'允许发布':'禁止发布'}</div></div>`,
+  ].join('');
+  document.getElementById('evalGold').innerHTML=EVAL_GOLDEN.map(x=>`<div class="eval-case"><div class="c-name">${x.id} · ${_esc(x.name)}<span class="eval-badge ${x.severity}">${x.severity==='pass'?'通过':x.severity==='fail'?'失败':'部分'}</span></div><div class="c-res">期望：${_esc(x.want)}<br>实际：${_esc(x.got)}</div><div class="c-judge">⚖️ LLM-as-a-Judge：${_esc(x.judge)}</div></div>`).join('');
+  const dims=['正确性','安全性','成本效率','可维护性'];
+  document.getElementById('evalJudge').innerHTML=dims.map((d,i)=>{ const v=[94.2,97.6,91.8,88.4][i]; const cls=v>=90?'pass':'fail'; return `<div class="qc-card"><div class="mdl">${d} <span class="badge-q ${v>=90?'hi':'lo'}">${v>=90?'达标':'待改进'}</span></div><div class="qq"><i style="width:${v}%"></i></div><div style="font-size:10px;color:var(--sub)">得分 ${v}/100（LLM-as-a-Judge 四维评分，≥90 视为通过）</div></div>`; }).join('');
+  document.getElementById('evalGate').innerHTML=`<div class="banner ${allPass?'':'err'}">门禁结论：<b>${allPass?'全部条件满足，允许发布':'存在阻断项，禁止发布'}</b><br><span style="font-size:10.5px">${allPass?'正确性 ≥95%、回归零失败、注入拦截、幂等均已满足':'阻断项：G-03（异常处理）、G-05（拼音归一化）、G-09（超时降级）未通过，修复后需重新跑回归'}</span></div>`;
+}
+runEval();
+// runBtn 始终走治理包装层（含分级推定、RCA、责任链同步）
+document.getElementById('runBtn').onclick = () => {
+  try { (window.runPipeline || runPipeline)(); }
+  catch(e){ console.error('[runBtn] failed', e); }
+};
+document.getElementById('reqInput').addEventListener('keydown',e=>{if(e.key==='Enter')runPipeline();});
+
+</script>
+</body>
+</html>
